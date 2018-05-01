@@ -3,7 +3,7 @@ all:
 	mv syntax.tab.c	syntax.tab.h Syntax
 	flex Lex/lexical.l
 	mv lex.yy.c Lex
-	gcc Lex/main.c Lex/tree.c -ll -ly -o parser
+	gcc Lex/main.c Syntax/syntax.tab.c -ll -ly -o parser
 
 test1:
 	./parser Test/test1.cmm	
