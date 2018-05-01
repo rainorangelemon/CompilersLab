@@ -14,6 +14,11 @@ FLOAT {FLOAT1}|{FLOAT2}
 
 ID [a-zA-Z_][0-9a-zA-Z_]*
 
+SPACES [ \t]+
+
+LINE_COMMENT "//"[^\n]*
+BLOCK_COMMENT "/*"((\*)*[^\*\/]+(\/)*)*"*/"
+
 SEMI ";"
 COMMA ","
 ASSIGNOP "="
@@ -39,7 +44,10 @@ IF "if"
 ELSE "else"
 WHILE "while"
 %%
+{LINE_COMMENT} {;}
+{BLOCK_COMMENT} {;}
 \n {;}
+{SPACES} {;}
 {INT} { printf("INT: %d %s\n", yylineno, yytext); }
 {FLOAT} { printf("FLOAT: %d %s\n", yylineno, yytext); }
 {SEMI} { printf("SEMI: %d %s\n", yylineno, yytext); }
