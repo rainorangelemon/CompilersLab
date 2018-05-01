@@ -1,4 +1,7 @@
 %{
+  #include "../Syntax/syntax.tab.h"
+  #include "tree.h"
+  int errorFlag = 0;
 %}
 
 %option yylineno
@@ -17,7 +20,8 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 SPACES [ \t]+
 
 LINE_COMMENT "//"[^\n]*
-BLOCK_COMMENT "/*"((\*)*[^\*\/]+(\/)*)*"*/"
+BLOCK_COMMENT "/*"(([^\*]*(\*[^\/])?)*)"*/"
+ERROR_COMMENT "/*"(([^\*]*(\*[^\/])?)*)({BLOCK_COMMENT}(([^\*]*(\*[^\/])?)*))+"*/"
 
 SEMI ";"
 COMMA ","
@@ -43,37 +47,40 @@ RETURN "return"
 IF "if"
 ELSE "else"
 WHILE "while"
+
+
 %%
+{ERROR_COMMENT} {errorFlag=1; printf("Error type A at line %d: Illegal comments.\n",yylineno);}
 {LINE_COMMENT} {;}
 {BLOCK_COMMENT} {;}
 \n {;}
 {SPACES} {;}
-{INT} { printf("INT: %d %s\n", yylineno, yytext); }
-{FLOAT} { printf("FLOAT: %d %s\n", yylineno, yytext); }
-{SEMI} { printf("SEMI: %d %s\n", yylineno, yytext); }
-{COMMA} { printf("COMMA: %d %s\n", yylineno, yytext); }
-{ASSIGNOP} { printf("ASSIGNOP: %d %s\n", yylineno, yytext); }
-{RELOP} { printf("ID: %d %s\n", yylineno, yytext); } 
-{PLUS} { printf("PLUS: %d %s\n", yylineno, yytext); }
-{MINUS} { printf("MINUS: %d %s\n", yylineno, yytext); }
-{STAR} { printf("STAR: %d %s\n", yylineno, yytext); }
-{DIV} { printf("DIV: %d %s\n", yylineno, yytext); }
-{AND} { printf("AND: %d %s\n", yylineno, yytext); }
-{OR} { printf("OR: %d %s\n", yylineno, yytext); }
-{DOT} { printf("DOT: %d %s\n", yylineno, yytext); }
-{NOT} { printf("NOT: %d %s\n", yylineno, yytext); }
-{TYPE} { printf("TYPE: %d %s\n", yylineno, yytext); }
-{LP} { printf("LP: %d %s\n", yylineno, yytext); }
-{RP} { printf("RP: %d %s\n", yylineno, yytext); }
-{LB} { printf("LB: %d %s\n", yylineno, yytext); }
-{RB} { printf("RB: %d %s\n", yylineno, yytext); }
-{LC} { printf("LC: %d %s\n", yylineno, yytext); }
-{RC} { printf("RC: %d %s\n", yylineno, yytext); }
-{STRUCT} { printf("STRUCT: %d %s\n", yylineno, yytext); }
-{RETURN} { printf("RETURN: %d %s\n", yylineno, yytext); }
-{IF} { printf("IF: %d %s\n", yylineno, yytext); }
-{ELSE} { printf("ELSE: %d %s\n", yylineno, yytext); }
-{WHILE} { printf("WHILE: %d %s\n", yylineno, yytext); }
-{ID} { printf("ID: %d %s\n", yylineno, yytext); } 
-. {printf("Error type A at line %d: Mysterious character '%s'\n",yylineno,yytext);}
+{INT} { yylval.node=createNode("INT", yytext); return INT;}
+{FLOAT} {yylval.node=createNode("FLOAT", yytext); return FLOAT;}
+{SEMI} { yylval.node=createNode("SEMI", yytext); return SEMI;}
+{COMMA} { yylval.node=createNode("COMMA", yytext); return COMMA;}
+{ASSIGNOP} { yylval.node=createNode("ASSIGNOP", yytext); return ASSIGNOP;}
+{RELOP} { yylval.node=createNode("RELOP", yytext); return RELOP;} 
+{PLUS} { yylval.node=createNode("PLUS", yytext); return PLUS;} 
+{MINUS} { yylval.node=createNode("MINUS", yytext); return MINUS;} 
+{STAR} { yylval.node=createNode("STAR", yytext); return STAR;} 
+{DIV} { yylval.node=createNode("DIV", yytext); return DIV;} 
+{AND} { yylval.node=createNode("AND", yytext); return AND;} 
+{OR} { yylval.node=createNode("OR", yytext); return OR;} 
+{DOT} { yylval.node=createNode("DOT", yytext); return DOT;} 
+{NOT} { yylval.node=createNode("NOT", yytext); return NOT;} 
+{TYPE} { yylval.node=createNode("TYPE", yytext); return TYPE;} 
+{LP} { yylval.node=createNode("LP", yytext); return LP;} 
+{RP} { yylval.node=createNode("RP", yytext); return RP;} 
+{LB} { yylval.node=createNode("LB", yytext); return LB;} 
+{RB} { yylval.node=createNode("RB", yytext); return RB;} 
+{LC} { yylval.node=createNode("LC", yytext); return LC;} 
+{RC} { yylval.node=createNode("RC", yytext); return RC;} 
+{STRUCT} { yylval.node=createNode("STRUCT", yytext); return STRUCT;} 
+{RETURN} { yylval.node=createNode("RETURN", yytext); return RETURN;} 
+{IF} { yylval.node=createNode("IF", yytext); return IF;} 
+{ELSE} { yylval.node=createNode("ELSE", yytext); return ELSE;} 
+{WHILE} { yylval.node=createNode("WHILE", yytext); return WHILE;} 
+{ID} { yylval.node=createNode("ID", yytext); return ID;} 
+. {errorFlag=1; printf("Error type A at line %d: Mysterious character '%s'\n",yylineno,yytext);}
 %%

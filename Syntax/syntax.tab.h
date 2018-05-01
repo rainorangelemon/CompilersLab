@@ -45,13 +45,50 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    INT = 258
+    INT = 258,
+    FLOAT = 259,
+    ID = 260,
+    SEMI = 261,
+    COMMA = 262,
+    ASSIGNOP = 263,
+    RELOP = 264,
+    PLUS = 265,
+    MINUS = 266,
+    STAR = 267,
+    DIV = 268,
+    AND = 269,
+    OR = 270,
+    DOT = 271,
+    NOT = 272,
+    TYPE = 273,
+    LP = 274,
+    RP = 275,
+    LB = 276,
+    RB = 277,
+    LC = 278,
+    RC = 279,
+    STRUCT = 280,
+    RETURN = 281,
+    IF = 282,
+    ELSE = 283,
+    WHILE = 284,
+    LOWER_THAN_ELSE = 285
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+
+union YYSTYPE
+{
+#line 9 "Syntax/syntax.y" /* yacc.c:1915  */
+
+    Node* node;
+
+#line 89 "syntax.tab.h" /* yacc.c:1915  */
+};
+
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
