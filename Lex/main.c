@@ -35,13 +35,13 @@ void addSon(Node* father, Node* son){
 /* print the tree*/
 void printTree(Node* root, int n){
     for(int i=0; i<n; i++)
-        printf(" ");
+        printf("·");
     Node* p = root->son;
     if(p!=NULL){
     	printf("%s (%d)\n", root->name, root->lineno);
     }else{
 	if(strcmp(root->name, "FLOAT") == 0){
-	    printf("%s: %f\n", root->name, atof(root->value));
+	    printf("%s: %f %s\n", root->name, atof(root->value), root->value);
 	}else if(strcmp(root->name, "INT") == 0){
 	    printf("%s: %ld\n", root->name, strtol(root->value, NULL, 0));
 	}else if((strcmp(root->name, "TYPE") == 0)||(strcmp(root->name, "ID") == 0)){
@@ -78,9 +78,9 @@ int main(int argc, char* argv[])
   }
   yyrestart(f);
   yyparse();
-  if(errorFlag == 0){
+//  if(errorFlag == 0){
     printTree(root, 0);
-  }
+//  }
   deleteTree(root);
   return 0;
 }

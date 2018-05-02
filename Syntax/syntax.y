@@ -4,6 +4,7 @@
   #include "../Lex/lex.yy.c"
   Node* root;
   int yylex();
+  char missingChar='?';
 %}
 
 %union {
@@ -36,8 +37,8 @@
 /* High-level Definitions*/
 PROGRAM : ExtDefList 				{$$=createNode("Program", ""); addSon($$, $1); root=$$;}
   ;
-ExtDefList : /*empty*/				{$$=NULL;}
-	| ExtDef ExtDefList			{$$=createNode("ExtDefList", ""); addSon($$, $1); addSon($$, $2);}
+ExtDefList : ExtDef ExtDefList			{$$=createNode("ExtDefList", ""); addSon($$, $1); addSon($$, $2);}
+	| /*empty*/				{$$=NULL;}
 	;
 ExtDef : Specifier ExtDecList SEMI		{$$=createNode("ExtDef", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
 	| Specifier SEMI			{$$=createNode("ExtDef", ""); addSon($$, $1); addSon($$, $2);}
@@ -51,11 +52,11 @@ ExtDecList : VarDec				{$$=createNode("ExtDecList", ""); addSon($$, $1);}
 Specifier : TYPE				{$$=createNode("Specifier", ""); addSon($$, $1);}
 	| StructSpecifier			{$$=createNode("Specifier", ""); addSon($$, $1);}
 	;
-StructSpecifier : STRUCT OptTag LC DefList RC	{$$=createNode("StructSpecifier", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4);}
+StructSpecifier : STRUCT OptTag LC DefList RC	{$$=createNode("StructSpecifier", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5);}
 	| STRUCT Tag				{$$=createNode("StructSpecifier", ""); addSon($$, $1); addSon($$, $2);}
 	;
-OptTag : /*empty*/				{$$=NULL;}
-	| ID					{$$=createNode("OptTag", ""); addSon($$, $1);}
+OptTag : ID					{$$=createNode("OptTag", ""); addSon($$, $1);}
+	| /*empty*/				{$$=NULL;}
 	;
 Tag : ID					{$$=createNode("Tag", ""); addSon($$, $1);}
 	;
@@ -76,8 +77,8 @@ ParamDec : Specifier VarDec			{$$=createNode("ParamDec", ""); addSon($$, $1); ad
 /*Statements*/
 CompSt : LC DefList StmtList RC			{$$=createNode("CompSt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4);}
 	;
-StmtList : /*empty*/				{$$=NULL;}
-	| Stmt StmtList				{$$=createNode("StmtList", ""); addSon($$, $1); addSon($$, $2);}
+StmtList : Stmt StmtList			{$$=createNode("StmtList", ""); addSon($$, $1); addSon($$, $2);}
+	| /*empty*/				{$$=NULL;}
 	;
 Stmt : Exp SEMI					{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2);}
 	| CompSt				{$$=createNode("Stmt", ""); addSon($$, $1);}
@@ -85,11 +86,12 @@ Stmt : Exp SEMI					{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2);}
 	| IF LP Exp RP Stmt %prec LOWER_THAN_ELSE	{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5);}
 	| IF LP Exp RP Stmt ELSE Stmt		{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5); addSon($$, $6); addSon($$, $7);}
 	| WHILE LP Exp RP Stmt			{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5);}
+	| error SEMI				{printf("Here is an error!\n"); errorFlag=1;}
 	;
 
 /*Local Definitions*/
-DefList : /*empty*/				{$$=NULL;}
-	| Def DefList				{$$=createNode("DefList", ""); addSon($$, $1); addSon($$, $2);}
+DefList : Def DefList				{$$=createNode("DefList", ""); addSon($$, $1); addSon($$, $2);}
+	| /*empty*/				{$$=NULL;}
 	;
 Def : Specifier DecList SEMI			{$$=createNode("Def", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
 	;
@@ -126,5 +128,6 @@ Args : Exp COMMA Args 				{$$=createNode("Args", ""); addSon($$, $1); addSon($$,
 
 %%
 yyerror(char* msg){
-	fprintf(stderr,"Error type B at line %d: %s.  (unexpected near '%s')\n", yylineno, msg, ((Node*)yylval.node)->value);
+	fprintf(stderr,"Error type B at line %d: %s.  (unexpected near '%s', Missing %c)\n", yylineno, msg, ((Node*)yylval.node)->value, missingChar);
+	missingChar = '?';
 }

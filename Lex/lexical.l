@@ -11,9 +11,10 @@ INT8 0[0-7]*
 INT16 ("0x"|"0X")[0-9A-Fa-f]+
 INT {INT10}|{INT8}|{INT16}
 
-FLOAT1 [0-9]+.[0-9]+
+FLOAT1 [0-9]+"."[0-9]+
 FLOAT2 (([0-9]+"."[0-9]*)|([0-9]*"."[0-9]+))[Ee][+-]?[0-9]+
 FLOAT {FLOAT1}|{FLOAT2}
+
 
 ID [a-zA-Z_][0-9a-zA-Z_]*
 
@@ -53,10 +54,10 @@ WHILE "while"
 {ERROR_COMMENT} {errorFlag=1; printf("Error type A at line %d: Illegal comments.\n",yylineno);}
 {LINE_COMMENT} {;}
 {BLOCK_COMMENT} {;}
-\n {;}
 {SPACES} {;}
-{INT} { yylval.node=createNode("INT", yytext); return INT;}
+\n {;}
 {FLOAT} {yylval.node=createNode("FLOAT", yytext); return FLOAT;}
+{INT} { yylval.node=createNode("INT", yytext); return INT;}
 {SEMI} { yylval.node=createNode("SEMI", yytext); return SEMI;}
 {COMMA} { yylval.node=createNode("COMMA", yytext); return COMMA;}
 {ASSIGNOP} { yylval.node=createNode("ASSIGNOP", yytext); return ASSIGNOP;}

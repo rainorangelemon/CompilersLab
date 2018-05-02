@@ -81,7 +81,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 9 "Syntax/syntax.y" /* yacc.c:1915  */
+#line 10 "Syntax/syntax.y" /* yacc.c:1915  */
 
     Node* node;
 
