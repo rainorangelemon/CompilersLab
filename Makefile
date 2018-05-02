@@ -27,4 +27,5 @@ test10:
 	./parser Test/test10.cmm
 test11:
 	./parser Test/test11.cmm	
-
+test12:
+	./parser Test/test12.cmm	

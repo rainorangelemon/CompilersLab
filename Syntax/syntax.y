@@ -14,12 +14,19 @@
 %token <node> INT FLOAT ID SEMI COMMA ASSIGNOP RELOP PLUS MINUS STAR DIV AND OR DOT NOT TYPE
 %token <node> LP RP LB RB LC RC STRUCT RETURN IF ELSE WHILE
 
+/*
 %type <node> PROGRAM ExtDefList ExtDef ExtDecList
 %type <node> Specifier StructSpecifier OptTag Tag 
 %type <node> VarDec FunDec VarList ParamDec
 %type <node> CompSt StmtList Stmt 
 %type <node> DefList Def DecList Dec
 %type <node> Exp Args
+*/
+
+%type <node> PROGRAM ExtDefList ExtDef ExtDecList Specifier
+%type <node> StructSpecifier OptTag Tag VarDec FunDec VarList
+%type <node> ParamDec CompSt StmtList Stmt DefList Def DecList
+%type <node> Dec Exp Args
 
 %right ASSIGNOP
 %left OR
@@ -86,7 +93,7 @@ Stmt : Exp SEMI					{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2);}
 	| IF LP Exp RP Stmt %prec LOWER_THAN_ELSE	{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5);}
 	| IF LP Exp RP Stmt ELSE Stmt		{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5); addSon($$, $6); addSon($$, $7);}
 	| WHILE LP Exp RP Stmt			{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5);}
-	| error SEMI				{printf("Here is an error!\n"); errorFlag=1;}
+	| error SEMI				{errorFlag=1;}
 	;
 
 /*Local Definitions*/
@@ -125,6 +132,7 @@ Exp : Exp ASSIGNOP Exp 				{$$=createNode("Exp", ""); addSon($$, $1); addSon($$,
 Args : Exp COMMA Args 				{$$=createNode("Args", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
 	| Exp					{$$=createNode("Args", ""); addSon($$, $1);}
 	;
+
 
 %%
 yyerror(char* msg){

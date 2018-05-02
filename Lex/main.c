@@ -7,6 +7,7 @@ extern Node* root;
 extern int errorFlag;
 
 Node* createNode(char* name, char* value){
+//    printf("%s %s\n", name, value);
     Node* result = (Node*)malloc(sizeof(Node));
     result -> lineno = yylineno;
     strcpy(result->name, name);
@@ -27,8 +28,8 @@ void addSon(Node* father, Node* son){
             p->bro = son;
         }else{
             father->son = son;
-            father->lineno = son->lineno;
         }
+	father->lineno = son->lineno;
     }
 }
 
@@ -36,12 +37,12 @@ void addSon(Node* father, Node* son){
 void printTree(Node* root, int n){
     for(int i=0; i<n; i++)
         printf("·");
-    Node* p = root->son;
-    if(p!=NULL){
-    	printf("%s (%d)\n", root->name, root->lineno);
-    }else{
+    if(root==NULL){
+	return;
+    } 
+    if(root->son==NULL){
 	if(strcmp(root->name, "FLOAT") == 0){
-	    printf("%s: %f %s\n", root->name, atof(root->value), root->value);
+	    printf("%s: %f\n", root->name, atof(root->value));
 	}else if(strcmp(root->name, "INT") == 0){
 	    printf("%s: %ld\n", root->name, strtol(root->value, NULL, 0));
 	}else if((strcmp(root->name, "TYPE") == 0)||(strcmp(root->name, "ID") == 0)){
@@ -49,10 +50,13 @@ void printTree(Node* root, int n){
 	}else{
 	    printf("%s\n", root->name);
 	}
-    }
-    while(p != NULL){
-        printTree(p, n+1);
-        p = p -> bro;
+    }else{
+    	printf("%s (%d)\n", root->name, root->lineno);
+    	Node* p = root->son;
+    	while(p != NULL){
+        	printTree(p, n+1);
+        	p = p -> bro;
+    	}
     }
 }
 
@@ -76,10 +80,12 @@ int main(int argc, char* argv[])
     perror(argv[1]);
     return 1;
   }
+  root = NULL;
+  yylineno = 1;
   yyrestart(f);
   yyparse();
 //  if(errorFlag == 0){
-    printTree(root, 0);
+	printTree(root, 0);
 //  }
   deleteTree(root);
   return 0;
