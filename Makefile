@@ -5,6 +5,12 @@ all:
 	mv lex.yy.c Lex
 	gcc Lex/main.c Syntax/syntax.tab.c -ll -ly -o parser
 
+debug:
+	bison -d -t Syntax/syntax.y
+	mv syntax.tab.c	syntax.tab.h Syntax
+	flex Lex/lexical.l
+	mv lex.yy.c Lex
+	gcc Lex/main.c Syntax/syntax.tab.c -ll -ly -o parser
 test1:
 	./parser Test/test1.cmm	
 test2:

@@ -28,8 +28,8 @@ void addSon(Node* father, Node* son){
             p->bro = son;
         }else{
             father->son = son;
+	    father->lineno = son->lineno;
         }
-	father->lineno = son->lineno;
     }
 }
 
@@ -84,9 +84,9 @@ int main(int argc, char* argv[])
   yylineno = 1;
   yyrestart(f);
   yyparse();
-//  if(errorFlag == 0){
+  if(errorFlag == 0){
 	printTree(root, 0);
-//  }
+  }
   deleteTree(root);
   return 0;
 }
