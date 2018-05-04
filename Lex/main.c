@@ -40,7 +40,7 @@ void printTree(Node* root, int n){
     if(root==NULL){
 	return;
     } 
-    if(root->son==NULL){
+    if(root->son==NULL){  //root为叶子节点
 	if(strcmp(root->name, "FLOAT") == 0){
 	    printf("%s: %f\n", root->name, atof(root->value));
 	}else if(strcmp(root->name, "INT") == 0){
