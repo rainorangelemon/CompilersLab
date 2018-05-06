@@ -2,4 +2,4 @@
 
 The lab codes for the NJU compilers' course.
 
-The reports are in the Report/ folder.
+The reports are in the folder called **Reports**.
