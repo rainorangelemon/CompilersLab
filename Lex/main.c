@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tree.h"
 
 extern int yylineno;
@@ -36,7 +37,7 @@ void addSon(Node* father, Node* son){
 /* print the tree*/
 void printTree(Node* root, int n){
     for(int i=0; i<n; i++)
-        printf("·");
+        printf(" ");
     if(root==NULL){
 	return;
     } 
@@ -84,7 +85,7 @@ int main(int argc, char* argv[])
   yylineno = 1;
   yyrestart(f);
   yyparse();
-  if(errorFlag == 0){
+  if((errorFlag == 0)||((argc>=3)&&(strcmp(argv[2], "-debug")==0))){
 	printTree(root, 0);
   }
   deleteTree(root);

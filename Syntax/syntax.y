@@ -52,11 +52,11 @@ ExtDefList : ExtDef ExtDefList			{$$=createNode("ExtDefList", ""); addSon($$, $1
 ExtDef : Specifier ExtDecList SEMI		{$$=createNode("ExtDef", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
 	| Specifier SEMI			{$$=createNode("ExtDef", ""); addSon($$, $1); addSon($$, $2);}
 	| Specifier FunDec CompSt		{$$=createNode("ExtDef", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
-	| Specifier error SEMI			{$$=createNode("ExtDef", ""); errorFlag=1; strcpy(hint, "Wrong Dec BETWEEN Specifier and SEMI.");}
+	| Specifier error SEMI			{$$=createNode("ExtDef", ""); errorFlag=1; strcpy(hint, "Wrong Dec BETWEEN Specifier and SEMI."); printf(" %s\n", hint);}
 	;
 ExtDecList : VarDec				{$$=createNode("ExtDecList", ""); addSon($$, $1);}
 	| VarDec COMMA ExtDecList		{$$=createNode("ExtDecList", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
-	| error COMMA ExtDecList		{$$=createNode("ExtDecList", ""); errorFlag=1; strcpy(hint, "Wrong VarDec before COMMA ExtDecList");}
+	| error COMMA ExtDecList		{$$=createNode("ExtDecList", ""); errorFlag=1; strcpy(hint, "Wrong VarDec before COMMA ExtDecList"); printf(" %s\n", hint);}
 	;
 
 /*Specifiers*/
@@ -64,7 +64,7 @@ Specifier : TYPE				{$$=createNode("Specifier", ""); addSon($$, $1);}
 	| StructSpecifier			{$$=createNode("Specifier", ""); addSon($$, $1);}
 	;
 StructSpecifier : STRUCT OptTag LC DefList RC	{$$=createNode("StructSpecifier", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5);}
-//	| STRUCT OptTag LC error RC		{$$=createNode("StructSpecifier", "");  strcpy(hint, "Wrong DefList between LC and RC"); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, createNode("DefList", "")); addSon($$, $5); errorFlag=1;}
+//	| STRUCT OptTag LC error RC		{$$=createNode("StructSpecifier", "");  strcpy(hint, "Wrong DefList between LC and RC"); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, createNode("DefList", "")); addSon($$, $5); errorFlag=1; printf(" %s\n", hint);}
 	| STRUCT Tag				{$$=createNode("StructSpecifier", ""); addSon($$, $1); addSon($$, $2);}
 	;
 OptTag : ID					{$$=createNode("OptTag", ""); addSon($$, $1);}
@@ -76,24 +76,24 @@ Tag : ID					{$$=createNode("Tag", ""); addSon($$, $1);}
 /*Declarators*/
 VarDec : ID					{$$=createNode("VarDec", ""); addSon($$, $1);}
 	| VarDec LB INT RB			{$$=createNode("VarDec", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4);}
-	| VarDec LB error RB			{$$=createNode("VarDec", ""); errorFlag=1; strcpy(hint, "Wrong INT between [ and ].");}
+	| VarDec LB error RB			{$$=createNode("VarDec", ""); errorFlag=1; strcpy(hint, "Wrong INT between [ and ]."); printf(" %s\n", hint);}
 	;
 FunDec : ID LP VarList RP			{$$=createNode("FunDec", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4);}
 	| ID LP RP				{$$=createNode("FunDec", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
-	| ID LP error RP			{strcpy(hint, "Wrong VarList between ID ( and )."); $$=createNode("FunDec", ""); addSon($$, $1); addSon($$, $2); addSon($$, $4); errorFlag=1;}
-	| ID error RP				{strcpy(hint, "Wrong VarList between ID and )."); $$=createNode("FunDec", ""); addSon($$, $1); addSon($$, createNode("LP", "")); addSon($$, $3); errorFlag=1;}
+	| ID LP error RP			{strcpy(hint, "Wrong VarList between ID ( and )."); $$=createNode("FunDec", ""); addSon($$, $1); addSon($$, $2); addSon($$, $4); errorFlag=1; printf(" %s\n", hint);}
+	| ID error RP				{strcpy(hint, "Wrong VarList between ID and )."); $$=createNode("FunDec", ""); addSon($$, $1); addSon($$, createNode("LP", "")); addSon($$, $3); errorFlag=1; printf(" %s\n", hint);}
 	;
 VarList : ParamDec COMMA VarList		{$$=createNode("VarList", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
 	| ParamDec				{$$=createNode("VarList", ""); addSon($$, $1);}
-	| error COMMA VarList			{$$=createNode("VarList", ""); errorFlag=1; strcpy(hint, "Wrong ParamDec before COMMA");}
+	| error COMMA VarList			{$$=createNode("VarList", ""); errorFlag=1; strcpy(hint, "Wrong ParamDec before COMMA"); printf(" %s\n", hint);}
 	;
 ParamDec : Specifier VarDec			{$$=createNode("ParamDec", ""); addSon($$, $1); addSon($$, $2);}
 	;
 
 /*Statements*/
 CompSt : LC DefList StmtList RC			{$$=createNode("CompSt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4);}
-	| LC DefList error RC			{$$=createNode("CompSt", ""); strcpy(hint, "Wrong StmtList between DefList and }."); addSon($$, $1); addSon($$, $2); addSon($$, createNode("StmtList", "")); addSon($$, $4); errorFlag=1;}
-	| LC error StmtList RC			{$$=createNode("CompSt", ""); strcpy(hint, "Wrong StmtList between DefList and }."); addSon($$, $1); addSon($$, createNode("DefList", "")); addSon($$, $3); addSon($$, $4); errorFlag=1;}
+	| LC DefList error RC			{$$=createNode("CompSt", ""); strcpy(hint, "Wrong StmtList between DefList and }."); addSon($$, $1); addSon($$, $2); addSon($$, createNode("StmtList", "")); addSon($$, $4); errorFlag=1; printf(" %s\n", hint);}
+	| LC error StmtList RC			{$$=createNode("CompSt", ""); strcpy(hint, "Wrong StmtList between DefList and }."); addSon($$, $1); addSon($$, createNode("DefList", "")); addSon($$, $3); addSon($$, $4); errorFlag=1; printf(" %s\n", hint);}
 	;
 StmtList : Stmt StmtList			{$$=createNode("StmtList", ""); addSon($$, $1); addSon($$, $2);}
 	| /*empty*/				{$$=NULL;}
@@ -102,20 +102,20 @@ Stmt : Exp SEMI					{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2);}
 	| CompSt				{$$=createNode("Stmt", ""); addSon($$, $1);}
 	| RETURN Exp SEMI			{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
 	| IF LP Exp RP Stmt %prec LOWER_THAN_ELSE	{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5);}
-	| IF LP error SEMI			{$$=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Exp after if (.");}
+	| IF LP error SEMI			{$$=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Exp after if (."); printf(" %s\n", hint);}
 	| IF LP Exp RP Stmt ELSE Stmt		{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5); addSon($$, $6); addSon($$, $7);}
-	| IF LP Exp RP error ELSE Stmt		{$$=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Stmt between ) and ELSE.");}
+	| IF LP Exp RP error ELSE Stmt		{$$=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Stmt between ) and ELSE."); printf(" %s\n", hint);}
 	| WHILE LP Exp RP Stmt			{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3); addSon($$, $4); addSon($$, $5);}
-	| WHILE LP error RP Stmt		{$$=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Exp between while ( and ).");}
-	| WHILE error SEMI			{$$=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Stmt between while and SEMI.");}
-	| error SEMI				{errorFlag=1; strcpy(hint, "Wrong Stmt.");}	;
+	| WHILE LP error RP Stmt		{$$=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Exp between while ( and )."); printf(" %s\n", hint);}
+	| WHILE error SEMI			{$$=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Stmt between while and SEMI."); printf(" %s\n", hint);}
+	| error SEMI				{errorFlag=1; strcpy(hint, "Wrong Stmt."); printf(" %s\n", hint);}	;
 
 /*Local Definitions*/
 DefList : Def DefList				{$$=createNode("DefList", ""); addSon($$, $1); addSon($$, $2);}
 	| /*empty*/				{$$=NULL;}
 	;
 Def : Specifier DecList SEMI			{$$=createNode("Def", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
-	| Specifier error SEMI			{$$=createNode("Def", ""); errorFlag=1;}
+	| Specifier error SEMI			{$$=createNode("Def", ""); errorFlag=1; printf(" %s\n", hint);}
 	;
 DecList : Dec					{$$=createNode("DecList", ""); addSon($$, $1);}
 	| Dec COMMA DecList			{$$=createNode("DecList", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
@@ -143,8 +143,8 @@ Exp : Exp ASSIGNOP Exp 				{$$=createNode("Exp", ""); addSon($$, $1); addSon($$,
 	| ID					{$$=createNode("Exp", ""); addSon($$, $1);}
 	| INT					{$$=createNode("Exp", ""); addSon($$, $1);}
 	| FLOAT					{$$=createNode("Exp", ""); addSon($$, $1);}
-	| LP error RP				{$$=createNode("Exp", ""); errorFlag=1; strcpy(hint, "Wrong Exp between ( and ).");}
-	| Exp LB error RB			{$$=createNode("Exp", ""); errorFlag=1; strcpy(hint, "Wrong Exp between [ and ].");}
+	| LP error RP				{$$=createNode("Exp", ""); errorFlag=1; strcpy(hint, "Wrong Exp between ( and ).");printf(" %s\n", hint);}
+	| Exp LB error RB			{$$=createNode("Exp", ""); errorFlag=1; strcpy(hint, "Wrong Exp between [ and ].");printf(" %s\n", hint);}
 	;
 Args : Exp COMMA Args 				{$$=createNode("Args", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
 	| Exp					{$$=createNode("Args", ""); addSon($$, $1);}
@@ -153,6 +153,7 @@ Args : Exp COMMA Args 				{$$=createNode("Args", ""); addSon($$, $1); addSon($$,
 
 %%
 yyerror(char* msg){
-	fprintf(stderr,"Error type B at line %d: %s.  (unexpected near '%s', %s)\n", yylineno, msg, ((Node*)yylval.node)->value, hint);
 	strcpy(hint, " ");
+	fprintf(stderr,"Error type B at line %d: %s. Unexpected near '%s', ", yylineno, msg, ((Node*)yylval.node)->value);
+
 }

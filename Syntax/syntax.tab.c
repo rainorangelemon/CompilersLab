@@ -1413,7 +1413,7 @@ yyreduce:
 
   case 8:
 #line 55 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("ExtDef", ""); errorFlag=1; strcpy(hint, "Wrong Dec BETWEEN Specifier and SEMI.");}
+    {(yyval.node)=createNode("ExtDef", ""); errorFlag=1; strcpy(hint, "Wrong Dec BETWEEN Specifier and SEMI."); printf(" %s\n", hint);}
 #line 1418 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1431,7 +1431,7 @@ yyreduce:
 
   case 11:
 #line 59 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("ExtDecList", ""); errorFlag=1; strcpy(hint, "Wrong VarDec before COMMA ExtDecList");}
+    {(yyval.node)=createNode("ExtDecList", ""); errorFlag=1; strcpy(hint, "Wrong VarDec before COMMA ExtDecList"); printf(" %s\n", hint);}
 #line 1436 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1491,7 +1491,7 @@ yyreduce:
 
   case 21:
 #line 79 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("VarDec", ""); errorFlag=1; strcpy(hint, "Wrong INT between [ and ].");}
+    {(yyval.node)=createNode("VarDec", ""); errorFlag=1; strcpy(hint, "Wrong INT between [ and ]."); printf(" %s\n", hint);}
 #line 1496 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1509,13 +1509,13 @@ yyreduce:
 
   case 24:
 #line 83 "Syntax/syntax.y" /* yacc.c:1661  */
-    {strcpy(hint, "Wrong VarList between ID ( and )."); (yyval.node)=createNode("FunDec", ""); addSon((yyval.node), (yyvsp[-3].node)); addSon((yyval.node), (yyvsp[-2].node)); addSon((yyval.node), (yyvsp[0].node)); errorFlag=1;}
+    {strcpy(hint, "Wrong VarList between ID ( and )."); (yyval.node)=createNode("FunDec", ""); addSon((yyval.node), (yyvsp[-3].node)); addSon((yyval.node), (yyvsp[-2].node)); addSon((yyval.node), (yyvsp[0].node)); errorFlag=1; printf(" %s\n", hint);}
 #line 1514 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
   case 25:
 #line 84 "Syntax/syntax.y" /* yacc.c:1661  */
-    {strcpy(hint, "Wrong VarList between ID and )."); (yyval.node)=createNode("FunDec", ""); addSon((yyval.node), (yyvsp[-2].node)); addSon((yyval.node), createNode("LP", "")); addSon((yyval.node), (yyvsp[0].node)); errorFlag=1;}
+    {strcpy(hint, "Wrong VarList between ID and )."); (yyval.node)=createNode("FunDec", ""); addSon((yyval.node), (yyvsp[-2].node)); addSon((yyval.node), createNode("LP", "")); addSon((yyval.node), (yyvsp[0].node)); errorFlag=1; printf(" %s\n", hint);}
 #line 1520 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1533,7 +1533,7 @@ yyreduce:
 
   case 28:
 #line 88 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("VarList", ""); errorFlag=1; strcpy(hint, "Wrong ParamDec before COMMA");}
+    {(yyval.node)=createNode("VarList", ""); errorFlag=1; strcpy(hint, "Wrong ParamDec before COMMA"); printf(" %s\n", hint);}
 #line 1538 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1551,13 +1551,13 @@ yyreduce:
 
   case 31:
 #line 95 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("CompSt", ""); strcpy(hint, "Wrong StmtList between DefList and }."); addSon((yyval.node), (yyvsp[-3].node)); addSon((yyval.node), (yyvsp[-2].node)); addSon((yyval.node), createNode("StmtList", "")); addSon((yyval.node), (yyvsp[0].node)); errorFlag=1;}
+    {(yyval.node)=createNode("CompSt", ""); strcpy(hint, "Wrong StmtList between DefList and }."); addSon((yyval.node), (yyvsp[-3].node)); addSon((yyval.node), (yyvsp[-2].node)); addSon((yyval.node), createNode("StmtList", "")); addSon((yyval.node), (yyvsp[0].node)); errorFlag=1; printf(" %s\n", hint);}
 #line 1556 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
   case 32:
 #line 96 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("CompSt", ""); strcpy(hint, "Wrong StmtList between DefList and }."); addSon((yyval.node), (yyvsp[-3].node)); addSon((yyval.node), createNode("DefList", "")); addSon((yyval.node), (yyvsp[-1].node)); addSon((yyval.node), (yyvsp[0].node)); errorFlag=1;}
+    {(yyval.node)=createNode("CompSt", ""); strcpy(hint, "Wrong StmtList between DefList and }."); addSon((yyval.node), (yyvsp[-3].node)); addSon((yyval.node), createNode("DefList", "")); addSon((yyval.node), (yyvsp[-1].node)); addSon((yyval.node), (yyvsp[0].node)); errorFlag=1; printf(" %s\n", hint);}
 #line 1562 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1599,7 +1599,7 @@ yyreduce:
 
   case 39:
 #line 105 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Exp after if (.");}
+    {(yyval.node)=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Exp after if (."); printf(" %s\n", hint);}
 #line 1604 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1611,7 +1611,7 @@ yyreduce:
 
   case 41:
 #line 107 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Stmt between ) and ELSE.");}
+    {(yyval.node)=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Stmt between ) and ELSE."); printf(" %s\n", hint);}
 #line 1616 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1623,19 +1623,19 @@ yyreduce:
 
   case 43:
 #line 109 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Exp between while ( and ).");}
+    {(yyval.node)=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Exp between while ( and )."); printf(" %s\n", hint);}
 #line 1628 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
   case 44:
 #line 110 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Stmt between while and SEMI.");}
+    {(yyval.node)=createNode("Stmt", ""); errorFlag=1; strcpy(hint, "Wrong Stmt between while and SEMI."); printf(" %s\n", hint);}
 #line 1634 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
   case 45:
 #line 111 "Syntax/syntax.y" /* yacc.c:1661  */
-    {errorFlag=1; strcpy(hint, "Wrong Stmt.");}
+    {errorFlag=1; strcpy(hint, "Wrong Stmt."); printf(" %s\n", hint);}
 #line 1640 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1659,7 +1659,7 @@ yyreduce:
 
   case 49:
 #line 118 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("Def", ""); errorFlag=1;}
+    {(yyval.node)=createNode("Def", ""); errorFlag=1; printf(" %s\n", hint);}
 #line 1664 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1797,13 +1797,13 @@ yyreduce:
 
   case 72:
 #line 146 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("Exp", ""); errorFlag=1; strcpy(hint, "Wrong Exp between ( and ).");}
+    {(yyval.node)=createNode("Exp", ""); errorFlag=1; strcpy(hint, "Wrong Exp between ( and ).");printf(" %s\n", hint);}
 #line 1802 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
   case 73:
 #line 147 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=createNode("Exp", ""); errorFlag=1; strcpy(hint, "Wrong Exp between [ and ].");}
+    {(yyval.node)=createNode("Exp", ""); errorFlag=1; strcpy(hint, "Wrong Exp between [ and ].");printf(" %s\n", hint);}
 #line 1808 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -2051,6 +2051,7 @@ yyreturn:
 #line 154 "Syntax/syntax.y" /* yacc.c:1906  */
 
 yyerror(char* msg){
-	fprintf(stderr,"Error type B at line %d: %s.  (unexpected near '%s', %s)\n", yylineno, msg, ((Node*)yylval.node)->value, hint);
 	strcpy(hint, " ");
+	fprintf(stderr,"Error type B at line %d: %s.  (unexpected near '%s', ", yylineno, msg, ((Node*)yylval.node)->value);
+
 }
