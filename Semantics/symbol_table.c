@@ -1,0 +1,99 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "data_type.h"
+
+unsigned int get_hash(char* name){
+  unsigned int val = 0, i;
+  for(; *name; ++name){
+    val = (val << 2) + *name;
+    if( i = val & ~hash_size) val = (val ^ (i >> 12)) & hash_size;
+  }
+  return val;
+}
+
+Hash_table* create_table(){
+  Hash_table* result = (Hash_table*)malloc(sizeof(Hash_table));
+  memset(result, 0, sizeof(Hash_table));
+  return result;
+}
+
+void push_env(Hash_table* hash_table) {
+  Stack_node* new_stack_node = (Stack_node*)malloc(sizeof(Stack_node));
+  if(hash_table->stack_head==NULL){
+    new_stack_node->depth=0;
+    hash_table->stack_head = new_stack_node;
+  }else{
+    new_stack_node->left=hash_table->stack_head;
+    new_stack_node->depth=((hash_table->stack_head->depth)+1);
+    hash_table->stack_head = new_stack_node;
+  }
+}
+
+void pop_env(Hash_table* hash_table){
+  Stack_node* head_node = hash_table->stack_head;
+  // delete symbols
+  Symbol* symbol = head_node->down;
+  while(symbol!=NULL){
+    unsigned int index = symbol->index;
+    hash_table->hash_table[index]=symbol->right;
+    Symbol *temp = symbol->down;
+    free(symbol);
+    symbol = temp;
+  }
+  // pop the last stack_node
+  Stack_node *temp = head_node->left;
+  free(head_node);
+  hash_table->stack_head = temp;
+}
+
+void insert_symbol(Hash_table* hash_table, char* name, Type type, Symbol_fuction* function){
+  // give value to new symbol
+  Symbol* new_symbol = (Symbol*)malloc(sizeof(Symbol));
+  new_symbol->depth = hash_table->stack_head->depth;
+  new_symbol->type = type;
+  new_symbol->function=function;
+  new_symbol->name = name;
+  new_symbol->down = hash_table->stack_head->down;
+  hash_table->stack_head->down = new_symbol;
+  // get the index of new symbol
+  unsigned int index = get_hash(new_symbol->name);
+  new_symbol->index = index;
+  // insert the symbol
+  if(hash_table->hash_table[index]==NULL){
+    hash_table->hash_table[index] = new_symbol;
+  }else{
+    new_symbol->right=hash_table->hash_table[index];
+    hash_table->hash_table[index]=new_symbol;
+  }
+}
+
+Symbol* find_variable(Hash_table* hash_table, char* name){
+  unsigned int index = get_hash(new_symbol->name);
+  Symbol* temp = hash_table->hash_table[index];
+  while(temp!=NULL){
+    if((strcmp(name, temp->name)==0)&&(temp->type!=0)){
+      break;
+    }else{
+      temp = temp->right;
+    }
+  }
+  return temp;
+}
+
+Symbol* find_function(Hash_table* hash_table, char* name){
+  unsigned int index = get_hash(new_symbol->name);
+  Symbol* temp = hash_table->hash_table[index];
+  while(temp!=NULL){
+    if((strcmp(name, temp->name)==0)&&(temp->function!=0)){
+      break;
+    }else{
+      temp = temp->right;
+    }
+  }
+  return temp;
+}
+
+int current_depth(Hash_table* hash_table){
+  return hash_table->stack_head->depth;
+}
