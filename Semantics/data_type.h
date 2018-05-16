@@ -66,4 +66,6 @@ struct Symbol* find_variable(struct Hash_table* hash_table, char* name);
 struct Symbol* find_function(struct Hash_table* hash_table, char* name);
 int current_depth(struct Hash_table* hash_table);
 
+void check_error(Node* tree_root);
+
 #endif
