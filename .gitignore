@@ -1,2 +1,4 @@
 .idea
 .idea/*
+.cmake-builld-debug
+.cmake-builld-debug/*
