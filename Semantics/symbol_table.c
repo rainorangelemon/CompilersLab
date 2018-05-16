@@ -12,14 +12,14 @@ unsigned int get_hash(char* name){
   return val;
 }
 
-Hash_table* create_table(){
-  Hash_table* result = (Hash_table*)malloc(sizeof(Hash_table));
-  memset(result, 0, sizeof(Hash_table));
+struct Hash_table* create_table(){
+  struct Hash_table* result = (struct Hash_table*)malloc(sizeof(struct Hash_table));
+  memset(result, 0, sizeof(struct Hash_table));
   return result;
 }
 
-void push_env(Hash_table* hash_table) {
-  Stack_node* new_stack_node = (Stack_node*)malloc(sizeof(Stack_node));
+void push_env(struct Hash_table* hash_table) {
+  struct Stack_node* new_stack_node = (struct Stack_node*)malloc(sizeof(struct Stack_node));
   if(hash_table->stack_head==NULL){
     new_stack_node->depth=0;
     hash_table->stack_head = new_stack_node;
@@ -30,26 +30,26 @@ void push_env(Hash_table* hash_table) {
   }
 }
 
-void pop_env(Hash_table* hash_table){
-  Stack_node* head_node = hash_table->stack_head;
+void pop_env(struct Hash_table* hash_table){
+  struct Stack_node* head_node = hash_table->stack_head;
   // delete symbols
-  Symbol* symbol = head_node->down;
+  struct Symbol* symbol = head_node->down;
   while(symbol!=NULL){
     unsigned int index = symbol->index;
     hash_table->hash_table[index]=symbol->right;
-    Symbol *temp = symbol->down;
+    struct Symbol *temp = symbol->down;
     free(symbol);
     symbol = temp;
   }
   // pop the last stack_node
-  Stack_node *temp = head_node->left;
+  struct Stack_node *temp = head_node->left;
   free(head_node);
   hash_table->stack_head = temp;
 }
 
-void insert_symbol(Hash_table* hash_table, char* name, Type type, Symbol_fuction* function){
+void insert_symbol(struct Hash_table* hash_table, char* name, Type type, struct Symbol_function* function){
   // give value to new symbol
-  Symbol* new_symbol = (Symbol*)malloc(sizeof(Symbol));
+  struct Symbol* new_symbol = (struct Symbol*)malloc(sizeof(struct Symbol));
   new_symbol->depth = hash_table->stack_head->depth;
   new_symbol->type = type;
   new_symbol->function=function;
@@ -68,9 +68,9 @@ void insert_symbol(Hash_table* hash_table, char* name, Type type, Symbol_fuction
   }
 }
 
-Symbol* find_variable(Hash_table* hash_table, char* name){
-  unsigned int index = get_hash(new_symbol->name);
-  Symbol* temp = hash_table->hash_table[index];
+struct Symbol* find_variable(struct Hash_table* hash_table, char* name){
+  unsigned int index = get_hash(name);
+  struct Symbol* temp = hash_table->hash_table[index];
   while(temp!=NULL){
     if((strcmp(name, temp->name)==0)&&(temp->type!=0)){
       break;
@@ -81,9 +81,9 @@ Symbol* find_variable(Hash_table* hash_table, char* name){
   return temp;
 }
 
-Symbol* find_function(Hash_table* hash_table, char* name){
-  unsigned int index = get_hash(new_symbol->name);
-  Symbol* temp = hash_table->hash_table[index];
+struct Symbol* find_function(struct Hash_table* hash_table, char* name){
+  unsigned int index = get_hash(name);
+  struct Symbol* temp = hash_table->hash_table[index];
   while(temp!=NULL){
     if((strcmp(name, temp->name)==0)&&(temp->function!=0)){
       break;
@@ -94,6 +94,6 @@ Symbol* find_function(Hash_table* hash_table, char* name){
   return temp;
 }
 
-int current_depth(Hash_table* hash_table){
+int current_depth(struct Hash_table* hash_table){
   return hash_table->stack_head->depth;
 }
