@@ -47,12 +47,16 @@ void pop_env(struct Hash_table* hash_table){
   hash_table->stack_head = temp;
 }
 
-void insert_symbol(struct Hash_table* hash_table, char* name, Type type, struct Symbol_function* function){
+void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type type, struct Symbol_function* function){
   // give value to new symbol
   struct Symbol* new_symbol = (struct Symbol*)malloc(sizeof(struct Symbol));
   new_symbol->depth = hash_table->stack_head->depth;
-  new_symbol->type = type;
-  new_symbol->function=function;
+  new_symbol->kind = kind;
+  if(kind != FUNC){
+    new_symbol->type = type;
+  }else {
+    new_symbol->function = function;
+  }
   new_symbol->name = name;
   new_symbol->down = hash_table->stack_head->down;
   hash_table->stack_head->down = new_symbol;
@@ -68,24 +72,11 @@ void insert_symbol(struct Hash_table* hash_table, char* name, Type type, struct 
   }
 }
 
-struct Symbol* find_variable(struct Hash_table* hash_table, char* name){
+struct Symbol* find_symbol(struct Hash_table* hash_table, char* name, int kind){
   unsigned int index = get_hash(name);
   struct Symbol* temp = hash_table->hash_table[index];
   while(temp!=NULL){
-    if((strcmp(name, temp->name)==0)&&(temp->type!=0)){
-      break;
-    }else{
-      temp = temp->right;
-    }
-  }
-  return temp;
-}
-
-struct Symbol* find_function(struct Hash_table* hash_table, char* name){
-  unsigned int index = get_hash(name);
-  struct Symbol* temp = hash_table->hash_table[index];
-  while(temp!=NULL){
-    if((strcmp(name, temp->name)==0)&&(temp->function!=0)){
+    if((strcmp(name, temp->name)==0)&&(temp->kind==temp->kind)){
       break;
     }else{
       temp = temp->right;

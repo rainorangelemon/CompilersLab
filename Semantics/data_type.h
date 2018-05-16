@@ -1,23 +1,25 @@
-#ifndef DATA_TYPE_H
-#define DATA_TYPE_H
+#ifndef DATATYPE_H
+#define DATATYPE_H
+
+#include "../Lex/tree.h"
 
 typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;
 
 struct Type_
 {
-  enum { BASIC, ARRAY, STRUCTURE } kind;
+  enum { BASIC=1, ARRAY=2, STRUCTURE=3 } kind;
   union
   {
     // basic type
-    int basic;
+    enum Type_TYPE{ INT=1, FLOAT=2 } basic;
     // array type
     struct { Type elem; int size; } array;
     FieldList structure;
   } u;
 };
 
-const int hash_size = 0x3fff;
+const static int hash_size = 0x3fff;
 
 struct FieldList_
 {
@@ -37,6 +39,7 @@ struct Symbol_function{
 
 struct Symbol{
   char* name;
+  enum Symbol_TYPE{ UNKNOWN = 0, VARIABLE=1, FUNC=2, STRUCT=3 } kind;
   union {
     Type type;
     struct Symbol_function* function;
@@ -61,11 +64,9 @@ struct Hash_table{
 struct Hash_table* create_table();
 void push_env(struct Hash_table* hash_table);
 void pop_env(struct Hash_table* hash_table);
-void insert_symbol(struct Hash_table* hash_table, char* name, Type type, struct Symbol_function* function);
-struct Symbol* find_variable(struct Hash_table* hash_table, char* name);
-struct Symbol* find_function(struct Hash_table* hash_table, char* name);
+void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type type, struct Symbol_function* function);
+struct Symbol* find_symbol(struct Hash_table* hash_table, char* name, int kind);
 int current_depth(struct Hash_table* hash_table);
-
 void check_error(Node* tree_root);
 
 #endif

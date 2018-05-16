@@ -47,7 +47,7 @@
 PROGRAM : ExtDefList 				{$$=createNode("Program", ""); addSon($$, $1); root=$$;}
 	;
 ExtDefList : ExtDef ExtDefList			{$$=createNode("ExtDefList", ""); addSon($$, $1); addSon($$, $2);}
-	| /*empty*/				{$$=NULL;}
+	| /*empty*/				{$$=createNode("ExtDefList", "");}
 	;
 ExtDef : Specifier ExtDecList SEMI		{$$=createNode("ExtDef", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
 	| Specifier SEMI			{$$=createNode("ExtDef", ""); addSon($$, $1); addSon($$, $2);}
@@ -68,7 +68,7 @@ StructSpecifier : STRUCT OptTag LC DefList RC	{$$=createNode("StructSpecifier", 
 	| STRUCT Tag				{$$=createNode("StructSpecifier", ""); addSon($$, $1); addSon($$, $2);}
 	;
 OptTag : ID					{$$=createNode("OptTag", ""); addSon($$, $1);}
-	| /*empty*/				{$$=NULL;}
+	| /*empty*/				{$$=createNode("OptTag", "");}
 	;
 Tag : ID					{$$=createNode("Tag", ""); addSon($$, $1);}
 	;
@@ -96,7 +96,7 @@ CompSt : LC DefList StmtList RC			{$$=createNode("CompSt", ""); addSon($$, $1); 
 	| LC error StmtList RC			{$$=createNode("CompSt", ""); strcpy(hint, "Wrong StmtList between DefList and }."); addSon($$, $1); addSon($$, createNode("DefList", "")); addSon($$, $3); addSon($$, $4); errorFlag=1; printf(" %s\n", hint);}
 	;
 StmtList : Stmt StmtList			{$$=createNode("StmtList", ""); addSon($$, $1); addSon($$, $2);}
-	| /*empty*/				{$$=NULL;}
+	| /*empty*/				{$$=createNode("StmtList", "");}
 	;
 Stmt : Exp SEMI					{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2);}
 	| CompSt				{$$=createNode("Stmt", ""); addSon($$, $1);}
@@ -112,7 +112,7 @@ Stmt : Exp SEMI					{$$=createNode("Stmt", ""); addSon($$, $1); addSon($$, $2);}
 
 /*Local Definitions*/
 DefList : Def DefList				{$$=createNode("DefList", ""); addSon($$, $1); addSon($$, $2);}
-	| /*empty*/				{$$=NULL;}
+	| /*empty*/				{$$=createNode("DefList", "");}
 	;
 Def : Specifier DecList SEMI			{$$=createNode("Def", ""); addSon($$, $1); addSon($$, $2); addSon($$, $3);}
 	| Specifier error SEMI			{$$=createNode("Def", ""); errorFlag=1; printf(" %s\n", hint);}

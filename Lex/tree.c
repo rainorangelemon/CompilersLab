@@ -34,6 +34,9 @@ void addSon(Node* father, Node* son){
 
 /* print the tree*/
 void printTree(Node* root, int n){
+  if((root->son==NULL)&&(strcmp(root->value, "")==0)){
+    return;
+  }
   for(int i=0; i<n; i++)
     printf(" ");
   if(root==NULL){

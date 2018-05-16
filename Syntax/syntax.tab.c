@@ -1389,7 +1389,7 @@ yyreduce:
 
   case 4:
 #line 50 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=NULL;}
+    {(yyval.node)=createNode("ExtDefList", "");}
 #line 1394 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1467,7 +1467,7 @@ yyreduce:
 
   case 17:
 #line 71 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=NULL;}
+    {(yyval.node)=createNode("OptTag", "");}
 #line 1472 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1569,7 +1569,7 @@ yyreduce:
 
   case 34:
 #line 99 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=NULL;}
+    {(yyval.node)=createNode("StmtList", "");}
 #line 1574 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
@@ -1647,7 +1647,7 @@ yyreduce:
 
   case 47:
 #line 115 "Syntax/syntax.y" /* yacc.c:1661  */
-    {(yyval.node)=NULL;}
+    {(yyval.node)=createNode("DefList", "");}
 #line 1652 "syntax.tab.c" /* yacc.c:1661  */
     break;
 
