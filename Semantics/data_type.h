@@ -17,7 +17,7 @@ struct Type_
   } u;
 };
 
-constant int hash_size = 0x3fff;
+const int hash_size = 0x3fff;
 
 struct FieldList_
 {
@@ -31,39 +31,39 @@ struct Symbol_function{
   int argc;
   struct argv{
     Type type;
-    argv* next;
+    struct argv* next;
   }argv1;
 };
 
 struct Symbol{
   char* name;
   union {
-    Type type=NULL;
-    Symbol_function* function=NULL;
+    Type type;
+    struct Symbol_function* function;
   };
   unsigned int index;
-  int depth = 0;
-  Symbol* right=NULL;
-  Symbol* down=NULL;
+  int depth;
+  struct Symbol* right;
+  struct Symbol* down;
 };
 
 struct Stack_node{
-  int depth = 0;
-  Stack_node* left=NULL;
-  Symbol* down=NULL;
+  int depth;
+  struct Stack_node* left;
+  struct Symbol* down;
 };
 
 struct Hash_table{
-  Stack_node* stack_head;
-  Symbol* hash_table[hash_size];
+  struct Stack_node* stack_head;
+  struct Symbol* hash_table[hash_size];
 };
 
-Hash_table* create_table();
-void push_env(Hash_table* hash_table);
-void pop_env(Hash_table* hash_table);
-void insert_symbol(Hash_table* hash_table, char* name, Type type, Symbol_fuction* function);
-Symbol* find_variable(Hash_table* hash_table, char* name);
-Symbol* find_function(Hash_table* hash_table, char* name);
-int current_depth(Hash_table* hash_table);
+struct Hash_table* create_table();
+void push_env(struct Hash_table* hash_table);
+void pop_env(struct Hash_table* hash_table);
+void insert_symbol(struct Hash_table* hash_table, char* name, Type type, struct Symbol_function* function);
+struct Symbol* find_variable(struct Hash_table* hash_table, char* name);
+struct Symbol* find_function(struct Hash_table* hash_table, char* name);
+int current_depth(struct Hash_table* hash_table);
 
 #endif
