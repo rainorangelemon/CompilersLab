@@ -47,14 +47,46 @@ void pop_env(struct Hash_table* hash_table){
   hash_table->stack_head = temp;
 }
 
-void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type type, struct Symbol_function* function){
+void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type type, struct Symbol_function* function, int lineno){
+  // check collision
+  if(kind==FUNC){
+    struct Symbol* temp = find_symbol(hash_table, name, kind);
+    if((temp!=NULL)&&(temp->depth==current_depth(hash_table))){
+      print_error(4, lineno);
+      return;
+    }
+  }else if(kind==VARIABLE){
+    struct Symbol* temp = find_symbol(hash_table, name, VARIABLE);
+    if((temp!=NULL)&&(temp->depth==current_depth(hash_table))){
+      print_error(3, lineno);
+      return;
+    }
+    temp = find_symbol(hash_table, name, STRUCT);
+    if((temp!=NULL)&&(temp->depth==current_depth(hash_table))){
+      print_error(3, lineno);
+      return;
+    }
+  }else if(kind==STRUCT){
+    struct Symbol* temp = find_symbol(hash_table, name, VARIABLE);
+    if((temp!=NULL)&&(temp->depth==current_depth(hash_table))){
+      print_error(16, lineno);
+      return;
+    }
+    temp = find_symbol(hash_table, name, STRUCT);
+    if((temp!=NULL)&&(temp->depth==current_depth(hash_table))){
+      print_error(16, lineno);
+      return;
+    }
+  }
+
+
   // give value to new symbol
   struct Symbol* new_symbol = (struct Symbol*)malloc(sizeof(struct Symbol));
   new_symbol->depth = hash_table->stack_head->depth;
   new_symbol->kind = kind;
   if(kind != FUNC){
     new_symbol->type = type;
-  }else {
+  } else {
     new_symbol->function = function;
   }
   new_symbol->name = name;
@@ -76,7 +108,7 @@ struct Symbol* find_symbol(struct Hash_table* hash_table, char* name, int kind){
   unsigned int index = get_hash(name);
   struct Symbol* temp = hash_table->hash_table[index];
   while(temp!=NULL){
-    if((strcmp(name, temp->name)==0)&&(temp->kind==temp->kind)){
+    if((strcmp(name, temp->name)==0)&&(temp->kind==kind)){
       break;
     }else{
       temp = temp->right;
