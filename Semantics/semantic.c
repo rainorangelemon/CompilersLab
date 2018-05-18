@@ -19,7 +19,7 @@ Type createType_Specifier(Node* Specifier);
 Type createType_StructSpecifier(Node* StructSpecifier);
 
 Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fieldList);
-void createSymbol_function_FunDec(struct Node* FunDec, Type returnType);
+void createSymbol_function_FunDec(struct Node* FunDec, int isDeclaration, Type returnType);
 
 Type valueSymbol_function_VarList(struct Node* VarList, struct Symbol_function* function);
 Type createType_ParamDec(struct Node* ParamDec);
@@ -65,7 +65,7 @@ int compareSubExpression(Node* tree_root, char* name){
   }
 }
 
-void check_error(Node* tree_root){  // this is also check_error_program
+void check_error(Node* tree_root) {  // this is also check_error_program
 //  char str[] = "Specifier FunDec CompSt";
 //  int result = compareSubExpression(tree_root, str);
 //  if(result==1){
@@ -74,16 +74,23 @@ void check_error(Node* tree_root){  // this is also check_error_program
 //  if(tree_root->son!=NULL){
 //    check_error(tree_root->son);
 //  }
-  char rule1[] = "PROGRAM";
-  if(strcmp(tree_root->name, rule1)!=0){
+  char rule1[] = "Program";
+  if (strcmp(tree_root->name, rule1) != 0) {
     return;
   }
   hash_table = create_table();
   push_env(hash_table);
   check_error_ExtDefList(root->son);
-  printf("before pop env\n");
+  // check error 18
+  struct Symbol *test_symbol = hash_table->stack_head->down;
+  while (test_symbol != NULL) {
+    if ((test_symbol->kind == FUNC) && (test_symbol->function->hasCompSt == 0)) {
+      print_error(18, test_symbol->function->define_lineno);
+    }
+    test_symbol = test_symbol->down;
+  }
+  // pop env
   pop_env(hash_table);
-  printf("before free table\n");
   free_table(hash_table);
 }
 
@@ -105,9 +112,12 @@ void check_error_ExtDef(Node* ExtDef) {
     valueType_ExtDecList(ExtDef->son->bro, specifier_type);
   } else if (compareSubExpression(ExtDef, rule2) == 1) {
     // do nothing
-  } else {
-    createSymbol_function_FunDec(ExtDef->son->bro, specifier_type);
+  } else if (compareSubExpression(ExtDef, rule3) == 1){
+    createSymbol_function_FunDec(ExtDef->son->bro, 0, specifier_type);
     check_error_CompSt(ExtDef->son->bro->bro, specifier_type);
+    pop_env(hash_table);
+  } else {
+    createSymbol_function_FunDec(ExtDef->son->bro, 1, specifier_type);
     pop_env(hash_table);
   }
 }
@@ -221,7 +231,7 @@ Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fiel
   }
 }
 
-void createSymbol_function_FunDec(struct Node* FunDec, Type returnType) {
+void createSymbol_function_FunDec(struct Node* FunDec, int isDeclaration, Type returnType) {
   char rule1[] = "ID LP VarList RP";
   int isRule1 = compareSubExpression(FunDec, rule1);
   struct Symbol_function *symbol_function = (struct Symbol_function *) malloc(sizeof(struct Symbol_function));
@@ -229,11 +239,13 @@ void createSymbol_function_FunDec(struct Node* FunDec, Type returnType) {
   symbol_function->argc = 0;
   symbol_function->argv1 = NULL;
   symbol_function->return_type = returnType;
-  insert_symbol(hash_table, FunDec->son->value, FUNC, NULL, symbol_function, FunDec->son->lineno);
+  symbol_function->define_lineno = FunDec->son->lineno;
+  symbol_function->hasCompSt = (1-isDeclaration);
   push_env(hash_table);
   if (isRule1 == 1) {
     valueSymbol_function_VarList(FunDec->son->bro->bro, symbol_function);
   }
+  insert_symbol(hash_table, FunDec->son->value, FUNC, NULL, symbol_function, FunDec->son->lineno);
 }
 
 Type valueSymbol_function_VarList(struct Node* VarList, struct Symbol_function* function) {
@@ -574,7 +586,6 @@ int compare_type_type(Type type_a, Type type_b){
   if((type_a==NULL)||(type_b==NULL)){
     return -1;
   }
-  //TODO: implement the rest comparison
   if((type_a->kind==BASIC)&&(type_b->kind==BASIC)){
     if(type_a->u.basic==type_b->u.basic){
       return 1;

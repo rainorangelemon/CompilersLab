@@ -38,6 +38,8 @@ struct Symbol_function{
   Type return_type;
   int argc;
   struct argv* argv1;
+  int hasCompSt;
+  int define_lineno;
 };
 
 struct Symbol{
@@ -73,5 +75,7 @@ struct Symbol* find_symbol(struct Hash_table* hash_table, char* name, int kind);
 int current_depth(struct Hash_table* hash_table);
 void check_error(Node* tree_root);
 void print_error(int error_type, int lineno);
+
+int compare_type_type(Type type_a, Type type_b);
 
 #endif

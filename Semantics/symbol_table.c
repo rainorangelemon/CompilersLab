@@ -18,6 +18,7 @@ struct Hash_table* create_table(){
   return result;
 }
 
+int compare_argv_argv(struct argv* argv1, struct argv* argv2);
 void free_symbol(struct Symbol* symbol);
 void free_func(struct Symbol_function* func);
 void free_argv(struct argv* argv1);
@@ -130,15 +131,48 @@ void pop_env(struct Hash_table* hash_table) {
   free(head_node);
 }
 
+int compare_argv_argv(struct argv* argv1, struct argv* argv2) {
+  if (((argv1 == NULL) && (argv2 != NULL)) || ((argv1 != NULL) && (argv2 == NULL))) {
+    return -1;
+  } else if ((argv1 == NULL) && (argv2 == NULL)) {
+    return 1;
+  } else {
+    if (compare_type_type(argv1->type, argv2->type) != 1) {
+      return -1;
+    } else {
+      return compare_argv_argv(argv1->next, argv2->next);
+    }
+  }
+}
+
 void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type type, struct Symbol_function* function, int lineno) {
 //  printf("I am searched! lineno: %d, name: %s, kind: %d\n", lineno, name, kind);
   // check collision
   if (kind == FUNC) {
     struct Symbol *temp = find_symbol(hash_table, name, kind);
-//    printf("FUNC is searched! name: %s, kind: %d, isExist: %d\n", name, kind, (temp==NULL));
+//  printf("FUNC is searched! name: %s, kind: %d, isExist: %d\n", name, kind, (temp==NULL));
     if ((temp != NULL) && (temp->depth == current_depth(hash_table))) {
-      print_error(4, lineno);
-      return;
+      if ((temp->kind != FUNC) ||
+          ((temp->kind == FUNC) && (temp->function->hasCompSt == 1) && (function->hasCompSt == 1))) {
+        print_error(4, lineno);
+        return;
+      } else {
+        if (compare_type_type(temp->function->return_type, function->return_type) != 1) {
+          print_error(19, lineno);
+          return;
+        } else if (temp->function->argc != function->argc) {
+          print_error(19, lineno);
+          return;
+        } else if (compare_argv_argv(temp->function->argv1, function->argv1) != 1) {
+          print_error(19, lineno);
+          return;
+        } else {
+          if (temp->function->hasCompSt == 0) {
+            temp->function->hasCompSt = function->hasCompSt;
+          }
+          return;
+        }
+      }
     }
   } else if (kind == VARIABLE) {
     struct Symbol *temp = find_symbol(hash_table, name, VARIABLE);
@@ -171,19 +205,30 @@ void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type typ
   // get the index of new symbol
   unsigned int index = get_hash(name);
   new_symbol->index = index;
-  new_symbol->depth = hash_table->stack_head->depth;
   new_symbol->kind = kind;
   new_symbol->name = name;
-  new_symbol->down = hash_table->stack_head->down;
-  hash_table->stack_head->down = new_symbol;
   if (kind != FUNC) {
+    new_symbol->depth = hash_table->stack_head->depth;
+    new_symbol->down = hash_table->stack_head->down;
+    hash_table->stack_head->down = new_symbol;
     new_symbol->type = type;
+    // insert the symbol
+    new_symbol->right = hash_table->hash_table[index];
+    hash_table->hash_table[index] = new_symbol;
   } else {
+    new_symbol->depth = hash_table->stack_head->depth;
+    struct Stack_node* stack_node = hash_table->stack_head;
+    while(stack_node->left!=NULL){
+      stack_node = stack_node->left;
+    }
+    new_symbol->down = stack_node->down;
+    stack_node->down = new_symbol;
     new_symbol->function = function;
+    // insert the symbol
+    new_symbol->right = hash_table->hash_table[index];
+    hash_table->hash_table[index] = new_symbol;
   }
-  // insert the symbol
-  new_symbol->right = hash_table->hash_table[index];
-  hash_table->hash_table[index] = new_symbol;
+
 }
 
 struct Symbol* find_symbol(struct Hash_table* hash_table, char* name, int kind){
