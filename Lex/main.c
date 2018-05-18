@@ -23,10 +23,10 @@ int main(int argc, char* argv[])
   yylineno = 1;
   yyrestart(f);
   yyparse();
-  check_error(root);
   if((errorFlag == 0)||((argc>=3)&&(strcmp(argv[2], "-debug")==0))){
-	  printTree(root, 0);
+    printTree(root, 0);
   }
+  check_error(root);
   deleteTree(root);
   return 0;
 }

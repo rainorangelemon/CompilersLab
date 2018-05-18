@@ -5,12 +5,17 @@
 #include "data_type.h"
 
 extern Node* root;
-extern struct Hash_table* hash_table;
+struct Hash_table* hash_table;
 
 void check_error(Node* tree_root);
+
+void check_error_ExtDefList(Node* ExtDefList);
+void check_error_ExtDef(Node* ExtDef);
+Type valueType_ExtDecList(Node* ExtDecList, Type type);
+
 Type createType_Specifier(Node* Specifier);
 Type createType_StructSpecifier(Node* StructSpecifier);
-Type valueType_ExtDecList(Node* ExtDecList, Type type);
+
 Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fieldList);
 void createSymbol_function_FunDec(struct Node* FunDec, Type returnType);
 
@@ -34,6 +39,7 @@ int compare_type_kind(Type type, int kind);
 void print_error(int error_type, int lineno);
 
 int compareSubExpression(Node* tree_root, char* name){
+//  printf("tree_root:%s, name:%s\n", tree_root->name, name); // just for debug
   if(tree_root->son==NULL){
     return -1;
   }else{
@@ -57,92 +63,129 @@ int compareSubExpression(Node* tree_root, char* name){
   }
 }
 
-void check_error(Node* tree_root){
-  char str[] = "Specifier FunDec CompSt";
-  int result = compareSubExpression(tree_root, str);
-  if(result==1){
-    printf("%s %s %d\n", tree_root->name, tree_root->value, tree_root->lineno);
-  }
-  if(tree_root->son!=NULL){
-    check_error(tree_root->son);
+void check_error(Node* tree_root){  // this is also check_error_program
+//  char str[] = "Specifier FunDec CompSt";
+//  int result = compareSubExpression(tree_root, str);
+//  if(result==1){
+//    printf("%s %s %d\n", tree_root->name, tree_root->value, tree_root->lineno);
+//  }
+//  if(tree_root->son!=NULL){
+//    check_error(tree_root->son);
+//  }
+  hash_table = create_table();
+  push_env(hash_table);
+  check_error_ExtDefList(root->son);
+  printf("before pop env\n");
+  pop_env(hash_table);
+  printf("before free table\n");
+  free_table(hash_table);
+}
+
+void check_error_ExtDefList(Node* ExtDefList) {
+  if (ExtDefList->son == NULL) {   // is rule 2
+    // do nothing
+  } else {
+    check_error_ExtDef(ExtDefList->son);
+    check_error_ExtDefList(ExtDefList->son->bro);
   }
 }
 
-Type createType_Specifier(Node* Specifier){
-  char rule1[] = "TYPE";
-  char rule2[] = "StructSpecifier";
-  int isRule1 = compareSubExpression(Specifier, rule1);
-  if(isRule1==1){
-    Type result = (Type)malloc(sizeof(struct Type_));
-    if(strcmp(Specifier->son->value, "int")==0) {
-      result->kind = BASIC;
-      result->u.basic = INT;
-    }else{
-      result->kind = BASIC;
-      result->u.basic = FLOAT;
-    }
-    return result;
-  }else{
-    return createType_StructSpecifier(Specifier->son);
+void check_error_ExtDef(Node* ExtDef) {
+  char rule1[] = "Specifier ExtDecList SEMI";
+  char rule2[] = "Specifier SEMI";
+  char rule3[] = "Specifier FunDec CompSt";
+  Type specifier_type = createType_Specifier(ExtDef->son);
+  if (compareSubExpression(ExtDef, rule1) == 1) {
+    valueType_ExtDecList(ExtDef->son->bro, specifier_type);
+  } else if (compareSubExpression(ExtDef, rule2) == 1) {
+    // do nothing
+  } else {
+    createSymbol_function_FunDec(ExtDef->son->bro, specifier_type);
+    check_error_CompSt(ExtDef->son->bro->bro, 1, specifier_type);
   }
 }
 
-Type createType_StructSpecifier(Node* StructSpecifier){
-  char rule1[] = "STRUCT OptTag LC DefList RC";
-  int isRule1 = compareSubExpression(StructSpecifier, rule1);
-  if(isRule1==1){
-    Type result = (Type)malloc(sizeof(struct Type_));
-    Node* OptTag = StructSpecifier->son->bro;
-    FieldList structure;
-    push_env(hash_table);
-    structure = createFieldList_DefList(OptTag->bro->bro, 1);
-    pop_env(hash_table);
-    result->u.structure = structure;
-    result->kind = STRUCTURE;
-    if(OptTag->son!=NULL){
-      struct Symbol symbol;
-      insert_symbol(hash_table, OptTag->son->value, STRUCT, result, NULL, OptTag->son->lineno);
-    }
-    return result;
-  }else{
-    Node* Tag = StructSpecifier->son->bro;
-    struct Symbol temp;
-    struct Symbol* structure = find_symbol(hash_table, Tag->value, STRUCT);
-    if(structure == NULL){
-      print_error(17, Tag->lineno);
-    }
-    return structure->type;
-  }
-}
-
-Type valueType_ExtDecList(Node* ExtDecList, Type type){
+Type valueType_ExtDecList(Node* ExtDecList, Type type) {
   char rule2[] = "VarDec COMMA ExtDecList";
   int isRule2 = compareSubExpression(ExtDecList, rule2);
-  if(isRule2!=1){
+  if (isRule2 != 1) {
     createType_VarDec(ExtDecList->son, type, 0, NULL);
-  }else{
+  } else {
     createType_VarDec(ExtDecList->son, type, 0, NULL);
     valueType_ExtDecList(ExtDecList->son->bro->bro, type);
   }
   return type;
 }
 
-Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fieldList){
+// Specifiers
+
+Type createType_Specifier(Node* Specifier) {
+  char rule1[] = "TYPE";
+  char rule2[] = "StructSpecifier";
+  int isRule1 = compareSubExpression(Specifier, rule1);
+  if (isRule1 == 1) {
+    Type result = (Type) malloc(sizeof(struct Type_));
+    memset(result, 0, sizeof(struct Type_));
+    if (strcmp(Specifier->son->value, "int") == 0) {
+      result->kind = BASIC;
+      result->u.basic = INT;
+    } else {
+      result->kind = BASIC;
+      result->u.basic = FLOAT;
+    }
+    return result;
+  } else {
+    return createType_StructSpecifier(Specifier->son);
+  }
+}
+
+Type createType_StructSpecifier(Node* StructSpecifier) {
+  char rule1[] = "STRUCT OptTag LC DefList RC";
+  int isRule1 = compareSubExpression(StructSpecifier, rule1);
+  if (isRule1 == 1) {
+    Type result = (Type) malloc(sizeof(struct Type_));
+    memset(result, 0, sizeof(struct Type_));
+    Node *OptTag = StructSpecifier->son->bro;
+    FieldList structure;
+    push_env(hash_table);
+    structure = createFieldList_DefList(OptTag->bro->bro, 1);
+    pop_env(hash_table);
+    result->u.structure = structure;
+    result->kind = STRUCTURE;
+    if (OptTag->son != NULL) {
+      struct Symbol symbol;
+      insert_symbol(hash_table, OptTag->son->value, STRUCT, result, NULL, OptTag->son->lineno);
+    }
+    return result;
+  } else {
+    Node *Tag = StructSpecifier->son->bro;
+    struct Symbol temp;
+    struct Symbol *structure = find_symbol(hash_table, Tag->value, STRUCT);
+    if (structure == NULL) {
+      print_error(17, Tag->lineno);
+    }
+    return structure->type;
+  }
+}
+
+// Declarators
+
+Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fieldList) {
   char rule1[] = "ID";
   int isRule1 = compareSubExpression(VarDec, rule1);
-  if(isRule1==1) {
-    if(insideStruct != 1){
-    insert_symbol(hash_table, VarDec->son->value, VARIABLE, type, NULL, VarDec->son->lineno);
-    }else{
-      if(fieldList->name==NULL){
+  if (isRule1 == 1) {
+    if (insideStruct != 1) {
+      insert_symbol(hash_table, VarDec->son->value, VARIABLE, type, NULL, VarDec->son->lineno);
+    } else {
+      if (fieldList->name == NULL) {
         fieldList->name = VarDec->son->value;
         fieldList->type = type;
-      }else {
-        char* name = VarDec->son->value;
+      } else {
+        char *name = VarDec->son->value;
         // begin to check the name redundancy
         FieldList temp = fieldList;
         while (temp->tail != NULL) {
-          if(strcmp(temp->name, name)==0){
+          if (strcmp(temp->name, name) == 0) {
             print_error(15, VarDec->son->lineno);
             return type;
           }
@@ -150,15 +193,17 @@ Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fiel
         }
         // no name redundancy
         FieldList new_field = (FieldList) malloc(sizeof(struct FieldList_));
+        memset(new_field, 0, sizeof(struct FieldList_));
         new_field->name = name;
         new_field->type = type;
         temp->tail = new_field;
       }
     }
     return type;
-  }else{
+  } else {
     int size = strtol(VarDec->son->bro->bro->value, NULL, 0);
-    Type result = (Type)malloc(sizeof(struct Type_));
+    Type result = (Type) malloc(sizeof(struct Type_));
+    memset(result, 0, sizeof(struct Type_));
     result->kind = ARRAY;
     result->u.array.size = size;
     result->u.array.elem = type;
@@ -167,44 +212,46 @@ Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fiel
   }
 }
 
-void createSymbol_function_FunDec(struct Node* FunDec, Type returnType){
+void createSymbol_function_FunDec(struct Node* FunDec, Type returnType) {
   char rule1[] = "ID LP VarList RP";
   int isRule1 = compareSubExpression(FunDec, rule1);
-  struct Symbol_function* symbol_function = (struct Symbol_function*)malloc(sizeof(struct Symbol_function));
+  struct Symbol_function *symbol_function = (struct Symbol_function *) malloc(sizeof(struct Symbol_function));
+  memset(symbol_function, 0, sizeof(struct Symbol_function));
   symbol_function->argc = 0;
   symbol_function->argv1 = NULL;
   symbol_function->return_type = returnType;
   push_env(hash_table);
-  if(isRule1==1){
+  if (isRule1 == 1) {
     valueSymbol_function_VarList(FunDec->son->bro->bro, symbol_function);
   }
   insert_symbol(hash_table, FunDec->son->value, FUNC, NULL, symbol_function, FunDec->son->lineno);
 }
 
-Type valueSymbol_function_VarList(struct Node* VarList, struct Symbol_function* function){
+Type valueSymbol_function_VarList(struct Node* VarList, struct Symbol_function* function) {
   char rule1[] = "ParamDec COMMA VarList";
   int isRule1 = compareSubExpression(VarList, rule1);
-  struct argv* p = function->argv1;
+  struct argv *p = function->argv1;
   Type paramDec_type = createType_ParamDec(VarList->son);
-  struct argv* temp = (struct argv*)malloc(sizeof(struct argv));
+  struct argv *temp = (struct argv *) malloc(sizeof(struct argv));
+  memset(temp, 0, sizeof(struct argv));
   temp->type = paramDec_type;
   temp->next = NULL;
-  if(p==NULL){
+  if (p == NULL) {
     function->argv1 = temp;
-  }else{
-    while(p->next!=NULL){
+  } else {
+    while (p->next != NULL) {
       p = p->next;
     }
     p->next = temp;
   }
   function->argc = function->argc + 1;
-  if(isRule1==1){
+  if (isRule1 == 1) {
     valueSymbol_function_VarList(VarList->son->bro->bro, function);
   }
   return NULL;
 }
 
-Type createType_ParamDec(struct Node* ParamDec){
+Type createType_ParamDec(struct Node* ParamDec) {
   Type type = createType_Specifier(ParamDec->son);
   insert_symbol(hash_table, ParamDec->son->bro->value, VARIABLE, type, NULL, ParamDec->son->bro->lineno);
   return type;
@@ -212,53 +259,53 @@ Type createType_ParamDec(struct Node* ParamDec){
 
 // Statements
 
-void check_error_CompSt(struct Node* CompSt, int rightAfterFunc, Type returnType){
+void check_error_CompSt(struct Node* CompSt, int rightAfterFunc, Type returnType) {
   push_env(hash_table);
   createFieldList_DefList(CompSt->son->bro, 0);
   check_error_StmtList(CompSt->son->bro->bro, returnType);
   pop_env(hash_table);
-  if(rightAfterFunc){
+  if (rightAfterFunc==1) {
     pop_env(hash_table);
   }
 }
 
-void check_error_StmtList(struct Node* StmtList, Type returnType){
-  if(StmtList->son!=NULL){
+void check_error_StmtList(struct Node* StmtList, Type returnType) {
+  if (StmtList->son != NULL) {
     check_error_Stmt(StmtList->son, returnType);
     check_error_StmtList(StmtList->son->bro, returnType);
   }
 }
 
-void check_error_Stmt(struct Node* Stmt, Type returnType){
+void check_error_Stmt(struct Node* Stmt, Type returnType) {
   char rule1[] = "Exp SEMI";
   char rule2[] = "CompSt";
   char rule3[] = "RETURN Exp SEMI";
   char rule4[] = "IF LP Exp RP Stmt";
   char rule5[] = "IF LP Exp RP Stmt ELSE Stmt";
   char rule6[] = "WHILE LP Exp RP Stmt";
-  if(compareSubExpression(Stmt, rule1)==1){
+  if (compareSubExpression(Stmt, rule1) == 1) {
     getType_Exp(Stmt->son);
-  }else if(compareSubExpression(Stmt, rule2)==1){
+  } else if (compareSubExpression(Stmt, rule2) == 1) {
     check_error_CompSt(Stmt->son, 0, returnType);
-  }else if(compareSubExpression(Stmt, rule3)==1){
-    if(returnType!=NULL){
-      if(compare_type_type(getType_Exp(Stmt->son->bro), returnType)!=1){
+  } else if (compareSubExpression(Stmt, rule3) == 1) {
+    if (returnType != NULL) {
+      if (compare_type_type(getType_Exp(Stmt->son->bro), returnType) != 1) {
         print_error(8, Stmt->son->lineno);
       }
     }
-  }else if(compareSubExpression(Stmt, rule4)==1){
-    if(compare_type_kind(getType_Exp(Stmt->son->bro->bro), INT)!=1){
+  } else if (compareSubExpression(Stmt, rule4) == 1) {
+    if (compare_type_kind(getType_Exp(Stmt->son->bro->bro), INT) != 1) {
       print_error(7, Stmt->son->lineno);
     }
     check_error_Stmt(Stmt->son->bro->bro->bro->bro, returnType);
-  }else if(compareSubExpression(Stmt, rule5)==1){
-    if(compare_type_kind(getType_Exp(Stmt->son->bro->bro), INT)!=1){
+  } else if (compareSubExpression(Stmt, rule5) == 1) {
+    if (compare_type_kind(getType_Exp(Stmt->son->bro->bro), INT) != 1) {
       print_error(7, Stmt->son->lineno);
     }
     check_error_Stmt(Stmt->son->bro->bro->bro->bro, returnType);
     check_error_Stmt(Stmt->son->bro->bro->bro->bro->bro->bro, returnType);
-  }else if(compareSubExpression(Stmt, rule6)==1){
-    if(compare_type_kind(getType_Exp(Stmt->son->bro->bro), INT)!=1){
+  } else if (compareSubExpression(Stmt, rule6) == 1) {
+    if (compare_type_kind(getType_Exp(Stmt->son->bro->bro), INT) != 1) {
       print_error(7, Stmt->son->lineno);
     }
     check_error_Stmt(Stmt->son->bro->bro->bro->bro, returnType);
@@ -267,54 +314,55 @@ void check_error_Stmt(struct Node* Stmt, Type returnType){
 
 // LOCAL Definitions
 
-FieldList createFieldList_DefList(struct Node* DefList, int insideStruct){
-  if(DefList->son!=NULL){
+FieldList createFieldList_DefList(struct Node* DefList, int insideStruct) {
+  if (DefList->son != NULL) {
     FieldList head = createFieldList_Def(DefList->son, insideStruct);
     FieldList tail = createFieldList_DefList(DefList->son->bro, insideStruct);
     FieldList p = head;
-    while(p->tail!=NULL){
+    while (p->tail != NULL) {
       p = p->tail;
     }
     p->tail = tail;
     return head;
-  }else{
+  } else {
     return NULL;
   }
 }
 
-FieldList createFieldList_Def(struct Node* Def, int insideStruct){
+FieldList createFieldList_Def(struct Node* Def, int insideStruct) {
   Type type = createType_Specifier(Def->son);
-  FieldList result = (FieldList)malloc(sizeof(struct FieldList_));
+  FieldList result = (FieldList) malloc(sizeof(struct FieldList_));
+  memset(result, 0, sizeof(struct FieldList_));
   result->name = NULL;
   createFieldList_DecList(Def->son->bro, type, result, insideStruct);
   return result;
 }
 
-void createFieldList_DecList(struct Node* DecList, Type type, FieldList fieldList, int insideStruct){
+void createFieldList_DecList(struct Node* DecList, Type type, FieldList fieldList, int insideStruct) {
   createFieldList_Dec(DecList->son, type, fieldList, insideStruct);
   char rule1[] = "Dec";
   int isRule1 = compareSubExpression(DecList, rule1);
-  if(isRule1!=1){
+  if (isRule1 != 1) {
     createFieldList_DecList(DecList->son->bro->bro, type, fieldList, insideStruct);
   }
 }
 
-void createFieldList_Dec(struct Node* Dec, Type type, FieldList fieldList, int insideStruct){
+void createFieldList_Dec(struct Node* Dec, Type type, FieldList fieldList, int insideStruct) {
   char rule1[] = "VarDec";
   int isRule1 = compareSubExpression(Dec, rule1);
-  if(isRule1!=1){
-    if(insideStruct==1){
+  if (isRule1 != 1) {
+    if (insideStruct == 1) {
       print_error(15, Dec->son->lineno);
     }
     Type exp_type = getType_Exp(Dec->son->bro->bro);
-    if(compare_type_type(type, exp_type)!=1){
+    if (compare_type_type(type, exp_type) != 1) {
       print_error(5, Dec->son->lineno);
     }
   }
   createType_VarDec(Dec->son, type, insideStruct, fieldList);
 }
 
-Type getType_Exp(struct Node* Exp){
+Type getType_Exp(struct Node* Exp) {
   char
     rule1[] = "Exp ASSIGNOP Exp",
     rule2[] = "Exp AND Exp",
@@ -335,105 +383,111 @@ Type getType_Exp(struct Node* Exp){
     rule17[] = "INT",
     rule18[] = "FLOAT";
   Type result = NULL;
-  if(compareSubExpression(Exp, rule1)==1){
+  if (compareSubExpression(Exp, rule1) == 1) {
     // check whether the value on the left of ASSIGNOP is a left value
-    if(!((compareSubExpression(Exp->son, rule14)==1)||(compareSubExpression(Exp->son, rule15)==1)||(compareSubExpression(Exp->son, rule16)==1))){
+    if (!((compareSubExpression(Exp->son, rule14) == 1) || (compareSubExpression(Exp->son, rule15) == 1) ||
+          (compareSubExpression(Exp->son, rule16) == 1))) {
       print_error(6, Exp->son->lineno);
-    }else{
+    } else {
       // check whether the types on both sides are equal
       Type type1 = getType_Exp(Exp->son);
       Type type2 = getType_Exp(Exp->son->bro->bro);
-      if(compare_type_type(type1, type2)!=1){
+      if (compare_type_type(type1, type2) != 1) {
         print_error(5, Exp->son->lineno);
       }
     }
-    result = (Type)malloc(sizeof(struct Type_));
+    result = (Type) malloc(sizeof(struct Type_));
+    memset(result, 0, sizeof(struct Type_));
     result->kind = BASIC;
     result->u.basic = INT;
-  }else if((compareSubExpression(Exp, rule2)==1)||(compareSubExpression(Exp, rule3)==1)){
+  } else if ((compareSubExpression(Exp, rule2) == 1) || (compareSubExpression(Exp, rule3) == 1)) {
     Type type1 = getType_Exp(Exp->son);
     Type type2 = getType_Exp(Exp->son->bro->bro);
-    if(!((compare_type_kind(type1, INT)==1)&&(compare_type_kind(type2, INT)==1))){
+    if (!((compare_type_kind(type1, INT) == 1) && (compare_type_kind(type2, INT) == 1))) {
       print_error(7, Exp->son->lineno);
     }
     result->kind = BASIC;
-    result = (Type)malloc(sizeof(struct Type_));
+    result = (Type) malloc(sizeof(struct Type_));
+    memset(result, 0, sizeof(struct Type_));
     result->u.basic = INT;
-  }else if((compareSubExpression(Exp, rule4)==1)||(compareSubExpression(Exp, rule5)==1)||
-            (compareSubExpression(Exp, rule6)==1)||(compareSubExpression(Exp, rule7)==1)||
-            (compareSubExpression(Exp, rule8)==1)){
+  } else if ((compareSubExpression(Exp, rule4) == 1) || (compareSubExpression(Exp, rule5) == 1) ||
+             (compareSubExpression(Exp, rule6) == 1) || (compareSubExpression(Exp, rule7) == 1) ||
+             (compareSubExpression(Exp, rule8) == 1)) {
     Type type1 = getType_Exp(Exp->son);
     Type type2 = getType_Exp(Exp->son->bro->bro);
-    if(!(((compare_type_kind(type1, INT)==1)&&(compare_type_kind(type2, INT)==1))|| \
-      ((compare_type_kind(type1, FLOAT)==1)&&(compare_type_kind(type2, FLOAT)==1)))){
+    if (!(((compare_type_kind(type1, INT) == 1) && (compare_type_kind(type2, INT) == 1)) || \
+      ((compare_type_kind(type1, FLOAT) == 1) && (compare_type_kind(type2, FLOAT) == 1)))) {
       print_error(7, Exp->son->lineno);
-    }else{
+    } else {
       result = type1;
     }
-  }else if(compareSubExpression(Exp, rule9)==1){
+  } else if (compareSubExpression(Exp, rule9) == 1) {
     result = getType_Exp(Exp->son->bro);
-  }else if(compareSubExpression(Exp, rule10)==1){
-    if(compare_type_kind(getType_Exp(Exp->son->bro), INT)==1){
-      result = (Type)malloc(sizeof(struct Type_));
+  } else if (compareSubExpression(Exp, rule10) == 1) {
+    if (compare_type_kind(getType_Exp(Exp->son->bro), INT) == 1) {
+      result = (Type) malloc(sizeof(struct Type_));
+      memset(result, 0, sizeof(struct Type_));
       result->kind = BASIC;
       result->u.basic = INT;
-    }else if(compare_type_kind(getType_Exp(Exp->son->bro), FLOAT)==1){
-      result = (Type)malloc(sizeof(struct Type_));
+    } else if (compare_type_kind(getType_Exp(Exp->son->bro), FLOAT) == 1) {
+      result = (Type) malloc(sizeof(struct Type_));
+      memset(result, 0, sizeof(struct Type_));
       result->kind = BASIC;
       result->u.basic = FLOAT;
-    }else{
+    } else {
       print_error(7, Exp->son->bro->lineno);
     }
-  }else if(compareSubExpression(Exp, rule11)==1){
-    if(compare_type_kind(getType_Exp(Exp->son->bro), INT)!=1){
+  } else if (compareSubExpression(Exp, rule11) == 1) {
+    if (compare_type_kind(getType_Exp(Exp->son->bro), INT) != 1) {
       print_error(7, Exp->son->bro->lineno);
-    }else{
-      result = (Type)malloc(sizeof(struct Type_));
+    } else {
+      result = (Type) malloc(sizeof(struct Type_));
+      memset(result, 0, sizeof(struct Type_));
       result->kind = BASIC;
       result->u.basic = INT;
     }
-  }else if(compareSubExpression(Exp, rule12)==1){
+  } else if (compareSubExpression(Exp, rule12) == 1) {
     //check whether the function exists in symbol
-    struct Symbol* func = find_symbol(hash_table, Exp->son->value, FUNC);
-    if(func==NULL){
-      struct Symbol* variable = find_symbol(hash_table, Exp->son->value, VARIABLE);
-      if(variable==NULL){
+    struct Symbol *func = find_symbol(hash_table, Exp->son->value, FUNC);
+    if (func == NULL) {
+      struct Symbol *variable = find_symbol(hash_table, Exp->son->value, VARIABLE);
+      if (variable == NULL) {
         print_error(2, Exp->son->lineno);
-      }else{
+      } else {
         print_error(11, Exp->son->lineno);
       }
-    }else{
+    } else {
       //check length of param of func
-      if(compareArgv_args(Exp->son->bro->bro, func->function->argv1)!=1){
+      if (compareArgv_args(Exp->son->bro->bro, func->function->argv1) != 1) {
         print_error(9, Exp->son->lineno);
-      }else{
+      } else {
         result = func->function->return_type;
       }
     }
-  }else if(compareSubExpression(Exp, rule13)==1){
+  } else if (compareSubExpression(Exp, rule13) == 1) {
     //check whether the function exists in symbol
-    struct Symbol* func = find_symbol(hash_table, Exp->son->value, FUNC);
-    if(func==NULL){
-      struct Symbol* variable = find_symbol(hash_table, Exp->son->value, VARIABLE);
-      if(variable==NULL){
+    struct Symbol *func = find_symbol(hash_table, Exp->son->value, FUNC);
+    if (func == NULL) {
+      struct Symbol *variable = find_symbol(hash_table, Exp->son->value, VARIABLE);
+      if (variable == NULL) {
         print_error(2, Exp->son->lineno);
-      }else{
+      } else {
         print_error(11, Exp->son->lineno);
       }
-    }else{
+    } else {
       //check length of param of func
-      if(func->function->argc!=0){
+      if (func->function->argc != 0) {
         print_error(9, Exp->son->lineno);
-      }else{
+      } else {
         result = func->function->return_type;
       }
     }
-  }else if(compareSubExpression(Exp, rule14)==1) {
+  } else if (compareSubExpression(Exp, rule14) == 1) {
     // check whether the first Exp is an array
     Type first_exp = getType_Exp(Exp->son);
-    if((first_exp==NULL)||(first_exp->kind!=ARRAY)){
+    if ((first_exp == NULL) || (first_exp->kind != ARRAY)) {
       print_error(10, Exp->son->lineno);
-    }else{
+    } else {
       // check whether the index is an integer
       Type index = getType_Exp(Exp->son->bro->bro);
       if ((index == NULL) || (index->kind != BASIC) || (index->u.basic != INT)) {
@@ -442,70 +496,76 @@ Type getType_Exp(struct Node* Exp){
         result = first_exp->u.array.elem;
       }
     }
-  }else if(compareSubExpression(Exp, rule15)==1){
+  } else if (compareSubExpression(Exp, rule15) == 1) {
     Type first_exp_type = getType_Exp(Exp->son);
-    if((first_exp_type==NULL)||(first_exp_type->kind!=STRUCTURE)){
+    if ((first_exp_type == NULL) || (first_exp_type->kind != STRUCTURE)) {
       print_error(13, Exp->son->lineno);
-    }else{
+    } else {
       //check whether there is a matching ID in Exp.type
       FieldList temp = first_exp_type->u.structure;
-      while (temp!= NULL) {
-        if(strcmp(temp->name, Exp->son->bro->bro->value)==0){
+      while (temp != NULL) {
+        if (strcmp(temp->name, Exp->son->bro->bro->value) == 0) {
           result = temp->type;
           break;
         }
         temp = temp->tail;
       }
-      if(temp==NULL){
+      if (temp == NULL) {
         print_error(14, Exp->son->lineno);
       }
     }
-  }else if(compareSubExpression(Exp, rule16)==1){
-    struct Symbol* symbol = find_symbol(hash_table, Exp->son->value, VARIABLE);
-    if(symbol==NULL){
+  } else if (compareSubExpression(Exp, rule16) == 1) {
+    struct Symbol *symbol = find_symbol(hash_table, Exp->son->value, VARIABLE);
+    if (symbol == NULL) {
       print_error(1, Exp->son->lineno);
-    }else {
+    } else {
       result = symbol->type;
     }
-  }else if(compareSubExpression(Exp, rule17)==1){
-    result = (Type)malloc(sizeof(struct Type_));
+  } else if (compareSubExpression(Exp, rule17) == 1) {
+    result = (Type) malloc(sizeof(struct Type_));
+    memset(result, 0, sizeof(struct Type_));
     result->kind = BASIC;
     result->u.basic = INT;
-  }else if(compareSubExpression(Exp, rule18)==1){
-    result = (Type)malloc(sizeof(struct Type_));
+  } else if (compareSubExpression(Exp, rule18) == 1) {
+    result = (Type) malloc(sizeof(struct Type_));
+    memset(result, 0, sizeof(struct Type_));
     result->kind = BASIC;
     result->u.basic = FLOAT;
   }
   return result;
 }
 
-int compareArgv_args(struct Node* Args, struct argv* function_argv){
-  if(((Args==NULL)&&(function_argv!=NULL))||((Args!=NULL)&&(function_argv==NULL))){
+int compareArgv_args(struct Node* Args, struct argv* function_argv) {
+  if (((Args == NULL) && (function_argv != NULL)) || ((Args != NULL) && (function_argv == NULL))) {
     return -1;
-  }else if((Args==NULL)&&(function_argv==NULL)){
+  } else if ((Args == NULL) && (function_argv == NULL)) {
     return 1;
   }
   Type exp_type = getType_Exp(Args->son);
-  if(compare_type_type(function_argv->type, exp_type)!=1){
+  if (compare_type_type(function_argv->type, exp_type) != 1) {
     return -1;
   }
   char rule1[] = "Exp COMMA Args";
-  if(compareSubExpression(Args, rule1)==1){
+  if (compareSubExpression(Args, rule1) == 1) {
     return compareArgv_args(Args->son->bro->bro, function_argv->next);
-  }else{
+  } else {
     return compareArgv_args(NULL, function_argv->next);
   }
 }
 
 void print_error(int error_type, int lineno){
-  printf("Error type %d at Line %d: .", error_type, lineno);
+  printf("Error type %d at Line %d: .\n", error_type, lineno);
 }
 
 int compare_type_kind(Type type, int kind){
   if(type==NULL){
     return -1;
   }
-  //TODO: implement the rest comparison
+  if((type->kind==BASIC)&&((kind==INT)||(kind==FLOAT))){
+    return 1;
+  }else if(type->kind==kind){
+    return 1;
+  }
   return -1;
 }
 
@@ -514,5 +574,26 @@ int compare_type_type(Type type_a, Type type_b){
     return -1;
   }
   //TODO: implement the rest comparison
+  if((type_a->kind==BASIC)&&(type_b->kind==BASIC)){
+    if(type_a->u.basic==type_b->u.basic){
+      return 1;
+    }
+  }else if((type_a->kind==ARRAY)&&(type_b->kind==ARRAY)){
+    return compare_type_type(type_a->u.array.elem, type_b->u.array.elem);
+  }else if((type_a->kind==STRUCTURE)&&(type_b->kind==STRUCTURE)){
+    FieldList temp_a = type_a->u.structure;
+    FieldList temp_b = type_b->u.structure;
+    int same;
+    while((temp_a!=NULL)||(temp_b!=NULL)){
+      same = compare_type_type(temp_a->type, temp_b->type);
+      if(same!=1){
+        return -1;
+      }else{
+        temp_a = temp_a->tail;
+        temp_b = temp_b->tail;
+      }
+    }
+    return 1;
+  }
   return -1;
 }

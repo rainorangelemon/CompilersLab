@@ -33,6 +33,7 @@ struct argv{
   struct argv* next;
 };
 
+
 struct Symbol_function{
   Type return_type;
   int argc;
@@ -64,6 +65,7 @@ struct Hash_table{
 };
 
 struct Hash_table* create_table();
+void free_table(struct Hash_table* hash_table);
 void push_env(struct Hash_table* hash_table);
 void pop_env(struct Hash_table* hash_table);
 void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type type, struct Symbol_function* function, int lineno);
