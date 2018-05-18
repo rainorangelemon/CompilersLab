@@ -123,23 +123,26 @@ void pop_env(struct Hash_table* hash_table) {
     hash_table->hash_table[index] = symbol->right;
     struct Symbol *temp = symbol;
     symbol = symbol->down;
+    free(temp);
   }
   // pop the last stack_node
   hash_table->stack_head = head_node->left;
-  free_symbol(head_node->down);
   free(head_node);
 }
 
 void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type type, struct Symbol_function* function, int lineno) {
+//  printf("I am searched! lineno: %d, name: %s, kind: %d\n", lineno, name, kind);
   // check collision
   if (kind == FUNC) {
     struct Symbol *temp = find_symbol(hash_table, name, kind);
+//    printf("FUNC is searched! name: %s, kind: %d, isExist: %d\n", name, kind, (temp==NULL));
     if ((temp != NULL) && (temp->depth == current_depth(hash_table))) {
       print_error(4, lineno);
       return;
     }
   } else if (kind == VARIABLE) {
     struct Symbol *temp = find_symbol(hash_table, name, VARIABLE);
+//    printf("VARIABLE is searched! name: %s, kind: %d, isExist: %d\n", name, kind, (temp==NULL));
     if ((temp != NULL) && (temp->depth == current_depth(hash_table))) {
       print_error(3, lineno);
       return;

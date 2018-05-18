@@ -7,6 +7,8 @@
 extern Node* root;
 struct Hash_table* hash_table;
 
+int error_line = -1;
+
 void check_error(Node* tree_root);
 
 void check_error_ExtDefList(Node* ExtDefList);
@@ -22,11 +24,11 @@ void createSymbol_function_FunDec(struct Node* FunDec, Type returnType);
 Type valueSymbol_function_VarList(struct Node* VarList, struct Symbol_function* function);
 Type createType_ParamDec(struct Node* ParamDec);
 
-void check_error_CompSt(struct Node* CompSt, int rightAfterFunc, Type returnType);
+void check_error_CompSt(struct Node* CompSt, Type returnType);
 void check_error_StmtList(struct Node* StmtList, Type returnType);
 void check_error_Stmt(struct Node* Stmt, Type returnType);
 
-FieldList createFieldList_DefList(Node* DefList, int insideStruct);
+FieldList createFieldList_DefList(Node* DefList, FieldList structure, int insideStruct);
 FieldList createFieldList_Def(struct Node* DefList, int insideStruct);
 void createFieldList_DecList(struct Node* DecList, Type type, FieldList fieldList, int insideStruct);
 void createFieldList_Dec(struct Node* Dec, Type type, FieldList fieldList, int insideStruct);
@@ -101,7 +103,8 @@ void check_error_ExtDef(Node* ExtDef) {
     // do nothing
   } else {
     createSymbol_function_FunDec(ExtDef->son->bro, specifier_type);
-    check_error_CompSt(ExtDef->son->bro->bro, 1, specifier_type);
+    check_error_CompSt(ExtDef->son->bro->bro, specifier_type);
+    pop_env(hash_table);
   }
 }
 
@@ -146,9 +149,11 @@ Type createType_StructSpecifier(Node* StructSpecifier) {
     Type result = (Type) malloc(sizeof(struct Type_));
     memset(result, 0, sizeof(struct Type_));
     Node *OptTag = StructSpecifier->son->bro;
-    FieldList structure;
     push_env(hash_table);
-    structure = createFieldList_DefList(OptTag->bro->bro, 1);
+    FieldList structure = (FieldList) malloc(sizeof(struct FieldList_));
+    memset(structure, 0, sizeof(struct FieldList_));
+    structure->name = NULL;
+    structure = createFieldList_DefList(OptTag->bro->bro, structure, 1);
     pop_env(hash_table);
     result->u.structure = structure;
     result->kind = STRUCTURE;
@@ -185,6 +190,7 @@ Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fiel
         // begin to check the name redundancy
         FieldList temp = fieldList;
         while (temp->tail != NULL) {
+          printf("temp->name: %s\n", temp->name);
           if (strcmp(temp->name, name) == 0) {
             print_error(15, VarDec->son->lineno);
             return type;
@@ -220,11 +226,11 @@ void createSymbol_function_FunDec(struct Node* FunDec, Type returnType) {
   symbol_function->argc = 0;
   symbol_function->argv1 = NULL;
   symbol_function->return_type = returnType;
+  insert_symbol(hash_table, FunDec->son->value, FUNC, NULL, symbol_function, FunDec->son->lineno);
   push_env(hash_table);
   if (isRule1 == 1) {
     valueSymbol_function_VarList(FunDec->son->bro->bro, symbol_function);
   }
-  insert_symbol(hash_table, FunDec->son->value, FUNC, NULL, symbol_function, FunDec->son->lineno);
 }
 
 Type valueSymbol_function_VarList(struct Node* VarList, struct Symbol_function* function) {
@@ -253,20 +259,17 @@ Type valueSymbol_function_VarList(struct Node* VarList, struct Symbol_function* 
 
 Type createType_ParamDec(struct Node* ParamDec) {
   Type type = createType_Specifier(ParamDec->son);
-  insert_symbol(hash_table, ParamDec->son->bro->value, VARIABLE, type, NULL, ParamDec->son->bro->lineno);
+  createType_VarDec(ParamDec->son->bro, type, 0, NULL);
   return type;
 }
 
 // Statements
 
-void check_error_CompSt(struct Node* CompSt, int rightAfterFunc, Type returnType) {
+void check_error_CompSt(struct Node* CompSt, Type returnType) {
   push_env(hash_table);
-  createFieldList_DefList(CompSt->son->bro, 0);
+  createFieldList_DefList(CompSt->son->bro, NULL, 0);
   check_error_StmtList(CompSt->son->bro->bro, returnType);
   pop_env(hash_table);
-  if (rightAfterFunc==1) {
-    pop_env(hash_table);
-  }
 }
 
 void check_error_StmtList(struct Node* StmtList, Type returnType) {
@@ -286,7 +289,7 @@ void check_error_Stmt(struct Node* Stmt, Type returnType) {
   if (compareSubExpression(Stmt, rule1) == 1) {
     getType_Exp(Stmt->son);
   } else if (compareSubExpression(Stmt, rule2) == 1) {
-    check_error_CompSt(Stmt->son, 0, returnType);
+    check_error_CompSt(Stmt->son, returnType);
   } else if (compareSubExpression(Stmt, rule3) == 1) {
     if (returnType != NULL) {
       if (compare_type_type(getType_Exp(Stmt->son->bro), returnType) != 1) {
@@ -314,7 +317,8 @@ void check_error_Stmt(struct Node* Stmt, Type returnType) {
 
 // LOCAL Definitions
 
-FieldList createFieldList_DefList(struct Node* DefList, int insideStruct) {
+// TODO: check the output
+FieldList createFieldList_DefList(struct Node* DefList, FieldList result, int insideStruct) {
   if (DefList->son != NULL) {
     FieldList head = createFieldList_Def(DefList->son, insideStruct);
     FieldList tail = createFieldList_DefList(DefList->son->bro, insideStruct);
@@ -329,11 +333,9 @@ FieldList createFieldList_DefList(struct Node* DefList, int insideStruct) {
   }
 }
 
-FieldList createFieldList_Def(struct Node* Def, int insideStruct) {
+//TODO: rename the function
+FieldList createFieldList_Def(struct Node* Def, FieldList result, int insideStruct) {
   Type type = createType_Specifier(Def->son);
-  FieldList result = (FieldList) malloc(sizeof(struct FieldList_));
-  memset(result, 0, sizeof(struct FieldList_));
-  result->name = NULL;
   createFieldList_DecList(Def->son->bro, type, result, insideStruct);
   return result;
 }
@@ -348,6 +350,7 @@ void createFieldList_DecList(struct Node* DecList, Type type, FieldList fieldLis
 }
 
 void createFieldList_Dec(struct Node* Dec, Type type, FieldList fieldList, int insideStruct) {
+  createType_VarDec(Dec->son, type, insideStruct, fieldList);
   char rule1[] = "VarDec";
   int isRule1 = compareSubExpression(Dec, rule1);
   if (isRule1 != 1) {
@@ -359,7 +362,6 @@ void createFieldList_Dec(struct Node* Dec, Type type, FieldList fieldList, int i
       print_error(5, Dec->son->lineno);
     }
   }
-  createType_VarDec(Dec->son, type, insideStruct, fieldList);
 }
 
 Type getType_Exp(struct Node* Exp) {
@@ -415,7 +417,7 @@ Type getType_Exp(struct Node* Exp) {
              (compareSubExpression(Exp, rule8) == 1)) {
     Type type1 = getType_Exp(Exp->son);
     Type type2 = getType_Exp(Exp->son->bro->bro);
-    if (!(((compare_type_kind(type1, INT) == 1) && (compare_type_kind(type2, INT) == 1)) || \
+    if (!(((compare_type_kind(type1, INT) == 1) && (compare_type_kind(type2, INT) == 1)) ||
       ((compare_type_kind(type1, FLOAT) == 1) && (compare_type_kind(type2, FLOAT) == 1)))) {
       print_error(7, Exp->son->lineno);
     } else {
@@ -554,14 +556,17 @@ int compareArgv_args(struct Node* Args, struct argv* function_argv) {
 }
 
 void print_error(int error_type, int lineno){
-  printf("Error type %d at Line %d: .\n", error_type, lineno);
+  if(error_line!=lineno){  //because every line has only one error
+    printf("Error type %d at Line %d: .\n", error_type, lineno);
+    error_line = lineno;
+  }
 }
 
 int compare_type_kind(Type type, int kind){
   if(type==NULL){
     return -1;
   }
-  if((type->kind==BASIC)&&((kind==INT)||(kind==FLOAT))){
+  if((type->kind==BASIC)&&((kind==INT)||(kind==FLOAT))&&(type->u.basic==kind)){
     return 1;
   }else if(type->kind==kind){
     return 1;
