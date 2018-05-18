@@ -3,6 +3,16 @@
 #include <string.h>
 #include "data_type.h"
 
+int compare_argv_argv(struct argv* argv1, struct argv* argv2);
+void free_symbol(struct Symbol* symbol);
+void free_func(struct Symbol_function* func);
+void free_argv(struct argv* argv1);
+void free_fieldList(FieldList fieldList);
+void free_type(Type type);
+
+// this class contains all the services provided by hash_table
+
+// the hash function recommended in the homework
 unsigned int get_hash(char* name){
   unsigned int val = 0, i;
   for(; *name; ++name){
@@ -12,19 +22,14 @@ unsigned int get_hash(char* name){
   return val;
 }
 
+// create a hash table
 struct Hash_table* create_table(){
   struct Hash_table* result = (struct Hash_table*)malloc(sizeof(struct Hash_table));
   memset(result, 0, sizeof(struct Hash_table));
   return result;
 }
 
-int compare_argv_argv(struct argv* argv1, struct argv* argv2);
-void free_symbol(struct Symbol* symbol);
-void free_func(struct Symbol_function* func);
-void free_argv(struct argv* argv1);
-void free_fieldList(FieldList fieldList);
-void free_type(Type type);
-
+// free all the symbols and a stack in the table
 void free_table(struct Hash_table* hash_table){
   // free the stack
   struct Stack_node* p = hash_table->stack_head;
@@ -39,6 +44,7 @@ void free_table(struct Hash_table* hash_table){
 
 }
 
+// free a symbol iteratively
 void free_symbol(struct Symbol* symbol){
   if(symbol==NULL){
     // do nothing
@@ -54,6 +60,7 @@ void free_symbol(struct Symbol* symbol){
   }
 }
 
+// free a func iteratively
 void free_func(struct Symbol_function* func){
   if(func==NULL){
     // do nothing
@@ -64,6 +71,7 @@ void free_func(struct Symbol_function* func){
   }
 }
 
+// free the argv list iteratively
 void free_argv(struct argv* argv1) {
   if (argv1 == NULL) {
     // do nothing
@@ -74,6 +82,7 @@ void free_argv(struct argv* argv1) {
   }
 }
 
+// free the fieldList iteratively
 void free_fieldList(FieldList fieldList) {
   if (fieldList == NULL) {
     // do nothing
@@ -84,6 +93,7 @@ void free_fieldList(FieldList fieldList) {
   }
 }
 
+// free the type
 void free_type(Type type) {
   if (type == NULL) {
     // do nothing
@@ -99,8 +109,7 @@ void free_type(Type type) {
   }
 }
 
-
-
+// push_env makes a new environment, such as for statements in a {}
 void push_env(struct Hash_table* hash_table) {
   struct Stack_node *new_stack_node = (struct Stack_node *) malloc(sizeof(struct Stack_node));
   memset(new_stack_node, 0, sizeof(struct Stack_node));
@@ -115,6 +124,7 @@ void push_env(struct Hash_table* hash_table) {
   }
 }
 
+// pop_env deletes the symbols contained in the current environment
 void pop_env(struct Hash_table* hash_table) {
   struct Stack_node *head_node = hash_table->stack_head;
   // delete symbols
@@ -131,6 +141,7 @@ void pop_env(struct Hash_table* hash_table) {
   free(head_node);
 }
 
+// compare an argv with another argv
 int compare_argv_argv(struct argv* argv1, struct argv* argv2) {
   if (((argv1 == NULL) && (argv2 != NULL)) || ((argv1 != NULL) && (argv2 == NULL))) {
     return -1;
@@ -145,6 +156,7 @@ int compare_argv_argv(struct argv* argv1, struct argv* argv2) {
   }
 }
 
+// insert a symbol into hash table, and check whether this symbol already exists
 void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type type, struct Symbol_function* function, int lineno) {
 //  printf("I am searched! lineno: %d, name: %s, kind: %d\n", lineno, name, kind);
   // check collision
@@ -231,6 +243,7 @@ void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type typ
 
 }
 
+// find a symbol in the hash table
 struct Symbol* find_symbol(struct Hash_table* hash_table, char* name, int kind){
   unsigned int index = get_hash(name);
   struct Symbol* temp = hash_table->hash_table[index];
@@ -244,6 +257,7 @@ struct Symbol* find_symbol(struct Hash_table* hash_table, char* name, int kind){
   return temp;
 }
 
+// get the current depth of the codes
 int current_depth(struct Hash_table* hash_table){
   return hash_table->stack_head->depth;
 }

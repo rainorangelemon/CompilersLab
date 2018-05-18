@@ -40,6 +40,8 @@ int compare_type_type(Type type_a, Type type_b);
 int compare_type_kind(Type type, int kind);
 void print_error(int error_type, char* target, int lineno);
 
+
+// check whether the expression, name, matches with tree_root
 int compareSubExpression(Node* tree_root, char* name){
 //  printf("tree_root:%s, name:%s\n", tree_root->name, name); // just for debug
   if(tree_root->son==NULL){
@@ -64,6 +66,8 @@ int compareSubExpression(Node* tree_root, char* name){
     return 1;
   }
 }
+
+// High-level Definitions
 
 void check_error(Node* tree_root) {
   char rule1[] = "Program";
@@ -322,7 +326,7 @@ void check_error_Stmt(struct Node* Stmt, Type returnType) {
   }
 }
 
-// LOCAL Definitions
+// Local Definitions
 
 FieldList createFieldList_DefList(struct Node* DefList, FieldList result, int insideStruct) {
   if (DefList->son != NULL) {
@@ -363,6 +367,8 @@ void createFieldList_Dec(struct Node* Dec, Type type, FieldList fieldList, int i
     }
   }
 }
+
+// Expressions
 
 Type getType_Exp(struct Node* Exp) {
   char
@@ -555,6 +561,7 @@ int compareArgv_args(struct Node* Args, struct argv* function_argv) {
   }
 }
 
+// to print error
 void print_error(int error_type, char* target, int lineno){
   char *information[20] ={"", // 0
                           "Undefined variable", // 1
@@ -587,6 +594,7 @@ void print_error(int error_type, char* target, int lineno){
   }
 }
 
+// compare type with kind
 int compare_type_kind(Type type, int kind){
   if(type==NULL){
     return -1;
@@ -599,6 +607,7 @@ int compare_type_kind(Type type, int kind){
   return -1;
 }
 
+// compare type with another type
 int compare_type_type(Type type_a, Type type_b){
   if((type_a==NULL)||(type_b==NULL)){
     return -1;
