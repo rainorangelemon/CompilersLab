@@ -74,6 +74,10 @@ void check_error(Node* tree_root){  // this is also check_error_program
 //  if(tree_root->son!=NULL){
 //    check_error(tree_root->son);
 //  }
+  char rule1[] = "PROGRAM";
+  if(strcmp(tree_root->name, rule1)!=0){
+    return;
+  }
   hash_table = create_table();
   push_env(hash_table);
   check_error_ExtDefList(root->son);
@@ -582,6 +586,9 @@ int compare_type_type(Type type_a, Type type_b){
     FieldList temp_b = type_b->u.structure;
     int same;
     while((temp_a!=NULL)||(temp_b!=NULL)){
+      if(((temp_a==NULL)&&(temp_b!=NULL))||((temp_a!=NULL)&&(temp_b==NULL))){
+        return -1;
+      }
       same = compare_type_type(temp_a->type, temp_b->type);
       if(same!=1){
         return -1;

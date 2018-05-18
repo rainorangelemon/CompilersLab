@@ -142,7 +142,6 @@ void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type typ
     }
   } else if (kind == VARIABLE) {
     struct Symbol *temp = find_symbol(hash_table, name, VARIABLE);
-//    printf("VARIABLE is searched! name: %s, kind: %d, isExist: %d\n", name, kind, (temp==NULL));
     if ((temp != NULL) && (temp->depth == current_depth(hash_table))) {
       print_error(3, lineno);
       return;
@@ -169,26 +168,22 @@ void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type typ
   // give value to new symbol
   struct Symbol *new_symbol = (struct Symbol *) malloc(sizeof(struct Symbol));
   memset(new_symbol, 0, sizeof(struct Symbol));
+  // get the index of new symbol
+  unsigned int index = get_hash(name);
+  new_symbol->index = index;
   new_symbol->depth = hash_table->stack_head->depth;
   new_symbol->kind = kind;
+  new_symbol->name = name;
+  new_symbol->down = hash_table->stack_head->down;
+  hash_table->stack_head->down = new_symbol;
   if (kind != FUNC) {
     new_symbol->type = type;
   } else {
     new_symbol->function = function;
   }
-  new_symbol->name = name;
-  new_symbol->down = hash_table->stack_head->down;
-  hash_table->stack_head->down = new_symbol;
-  // get the index of new symbol
-  unsigned int index = get_hash(new_symbol->name);
-  new_symbol->index = index;
   // insert the symbol
-  if (hash_table->hash_table[index] == NULL) {
-    hash_table->hash_table[index] = new_symbol;
-  } else {
-    new_symbol->right = hash_table->hash_table[index];
-    hash_table->hash_table[index] = new_symbol;
-  }
+  new_symbol->right = hash_table->hash_table[index];
+  hash_table->hash_table[index] = new_symbol;
 }
 
 struct Symbol* find_symbol(struct Hash_table* hash_table, char* name, int kind){
