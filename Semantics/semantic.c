@@ -38,7 +38,7 @@ int compareArgv_args(struct Node* Args, struct argv* function_argv);
 
 int compare_type_type(Type type_a, Type type_b);
 int compare_type_kind(Type type, int kind);
-void print_error(int error_type, int lineno);
+void print_error(int error_type, char* target, int lineno);
 
 int compareSubExpression(Node* tree_root, char* name){
 //  printf("tree_root:%s, name:%s\n", tree_root->name, name); // just for debug
@@ -65,15 +65,7 @@ int compareSubExpression(Node* tree_root, char* name){
   }
 }
 
-void check_error(Node* tree_root) {  // this is also check_error_program
-//  char str[] = "Specifier FunDec CompSt";
-//  int result = compareSubExpression(tree_root, str);
-//  if(result==1){
-//    printf("%s %s %d\n", tree_root->name, tree_root->value, tree_root->lineno);
-//  }
-//  if(tree_root->son!=NULL){
-//    check_error(tree_root->son);
-//  }
+void check_error(Node* tree_root) {
   char rule1[] = "Program";
   if (strcmp(tree_root->name, rule1) != 0) {
     return;
@@ -85,7 +77,7 @@ void check_error(Node* tree_root) {  // this is also check_error_program
   struct Symbol *test_symbol = hash_table->stack_head->down;
   while (test_symbol != NULL) {
     if ((test_symbol->kind == FUNC) && (test_symbol->function->hasCompSt == 0)) {
-      print_error(18, test_symbol->function->define_lineno);
+      print_error(18, test_symbol->name, test_symbol->function->define_lineno);
     }
     test_symbol = test_symbol->down;
   }
@@ -180,7 +172,7 @@ Type createType_StructSpecifier(Node* StructSpecifier) {
     struct Symbol temp;
     struct Symbol *structure = find_symbol(hash_table, Tag->son->value, STRUCT);
     if (structure == NULL) {
-      print_error(17, Tag->lineno);
+      print_error(17, Tag->son->value, Tag->lineno);
       return NULL;
     }
     return structure->type;
@@ -205,7 +197,7 @@ Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fiel
         FieldList temp = fieldList;
         while (temp->tail != NULL) {
           if (strcmp(temp->name, name) == 0) {
-            print_error(15, VarDec->son->lineno);
+            print_error(15, name, VarDec->son->lineno);
             return type;
           }
           temp = temp->tail;
@@ -308,23 +300,23 @@ void check_error_Stmt(struct Node* Stmt, Type returnType) {
   } else if (compareSubExpression(Stmt, rule3) == 1) {
     if (returnType != NULL) {
       if (compare_type_type(getType_Exp(Stmt->son->bro), returnType) != 1) {
-        print_error(8, Stmt->son->lineno);
+        print_error(8, NULL, Stmt->son->lineno);
       }
     }
   } else if (compareSubExpression(Stmt, rule4) == 1) {
     if (compare_type_kind(getType_Exp(Stmt->son->bro->bro), INT) != 1) {
-      print_error(7, Stmt->son->lineno);
+      print_error(7, NULL, Stmt->son->lineno);
     }
     check_error_Stmt(Stmt->son->bro->bro->bro->bro, returnType);
   } else if (compareSubExpression(Stmt, rule5) == 1) {
     if (compare_type_kind(getType_Exp(Stmt->son->bro->bro), INT) != 1) {
-      print_error(7, Stmt->son->lineno);
+      print_error(7, NULL, Stmt->son->lineno);
     }
     check_error_Stmt(Stmt->son->bro->bro->bro->bro, returnType);
     check_error_Stmt(Stmt->son->bro->bro->bro->bro->bro->bro, returnType);
   } else if (compareSubExpression(Stmt, rule6) == 1) {
     if (compare_type_kind(getType_Exp(Stmt->son->bro->bro), INT) != 1) {
-      print_error(7, Stmt->son->lineno);
+      print_error(7, NULL, Stmt->son->lineno);
     }
     check_error_Stmt(Stmt->son->bro->bro->bro->bro, returnType);
   }
@@ -363,11 +355,11 @@ void createFieldList_Dec(struct Node* Dec, Type type, FieldList fieldList, int i
   int isRule1 = compareSubExpression(Dec, rule1);
   if (isRule1 != 1) {
     if (insideStruct == 1) {
-      print_error(15, Dec->son->lineno);
+      print_error(15, NULL, Dec->son->lineno);
     }
     Type exp_type = getType_Exp(Dec->son->bro->bro);
     if (compare_type_type(type, exp_type) != 1) {
-      print_error(5, Dec->son->lineno);
+      print_error(5, NULL, Dec->son->lineno);
     }
   }
 }
@@ -397,13 +389,13 @@ Type getType_Exp(struct Node* Exp) {
     // check whether the value on the left of ASSIGNOP is a left value
     if (!((compareSubExpression(Exp->son, rule14) == 1) || (compareSubExpression(Exp->son, rule15) == 1) ||
           (compareSubExpression(Exp->son, rule16) == 1))) {
-      print_error(6, Exp->son->lineno);
+      print_error(6, NULL, Exp->son->lineno);
     } else {
       // check whether the types on both sides are equal
       Type type1 = getType_Exp(Exp->son);
       Type type2 = getType_Exp(Exp->son->bro->bro);
       if (compare_type_type(type1, type2) != 1) {
-        print_error(5, Exp->son->lineno);
+        print_error(5, NULL, Exp->son->lineno);
       }
     }
     result = (Type) malloc(sizeof(struct Type_));
@@ -414,7 +406,7 @@ Type getType_Exp(struct Node* Exp) {
     Type type1 = getType_Exp(Exp->son);
     Type type2 = getType_Exp(Exp->son->bro->bro);
     if (!((compare_type_kind(type1, INT) == 1) && (compare_type_kind(type2, INT) == 1))) {
-      print_error(7, Exp->son->lineno);
+      print_error(7, NULL, Exp->son->lineno);
     }
     result->kind = BASIC;
     result = (Type) malloc(sizeof(struct Type_));
@@ -427,7 +419,7 @@ Type getType_Exp(struct Node* Exp) {
     Type type2 = getType_Exp(Exp->son->bro->bro);
     if (!(((compare_type_kind(type1, INT) == 1) && (compare_type_kind(type2, INT) == 1)) ||
       ((compare_type_kind(type1, FLOAT) == 1) && (compare_type_kind(type2, FLOAT) == 1)))) {
-      print_error(7, Exp->son->lineno);
+      print_error(7, NULL, Exp->son->lineno);
     } else {
       result = type1;
     }
@@ -445,11 +437,11 @@ Type getType_Exp(struct Node* Exp) {
       result->kind = BASIC;
       result->u.basic = FLOAT;
     } else {
-      print_error(7, Exp->son->bro->lineno);
+      print_error(7, NULL, Exp->son->bro->lineno);
     }
   } else if (compareSubExpression(Exp, rule11) == 1) {
     if (compare_type_kind(getType_Exp(Exp->son->bro), INT) != 1) {
-      print_error(7, Exp->son->bro->lineno);
+      print_error(7, NULL, Exp->son->bro->lineno);
     } else {
       result = (Type) malloc(sizeof(struct Type_));
       memset(result, 0, sizeof(struct Type_));
@@ -462,14 +454,14 @@ Type getType_Exp(struct Node* Exp) {
     if (func == NULL) {
       struct Symbol *variable = find_symbol(hash_table, Exp->son->value, VARIABLE);
       if (variable == NULL) {
-        print_error(2, Exp->son->lineno);
+        print_error(2, Exp->son->value, Exp->son->lineno);
       } else {
-        print_error(11, Exp->son->lineno);
+        print_error(11, Exp->son->value, Exp->son->lineno);
       }
     } else {
       //check length of param of func
       if (compareArgv_args(Exp->son->bro->bro, func->function->argv1) != 1) {
-        print_error(9, Exp->son->lineno);
+        print_error(9, Exp->son->value, Exp->son->lineno);
       } else {
         result = func->function->return_type;
       }
@@ -480,14 +472,14 @@ Type getType_Exp(struct Node* Exp) {
     if (func == NULL) {
       struct Symbol *variable = find_symbol(hash_table, Exp->son->value, VARIABLE);
       if (variable == NULL) {
-        print_error(2, Exp->son->lineno);
+        print_error(2, Exp->son->value, Exp->son->lineno);
       } else {
-        print_error(11, Exp->son->lineno);
+        print_error(11, Exp->son->value, Exp->son->lineno);
       }
     } else {
       //check length of param of func
       if (func->function->argc != 0) {
-        print_error(9, Exp->son->lineno);
+        print_error(9, Exp->son->value, Exp->son->lineno);
       } else {
         result = func->function->return_type;
       }
@@ -496,12 +488,12 @@ Type getType_Exp(struct Node* Exp) {
     // check whether the first Exp is an array
     Type first_exp = getType_Exp(Exp->son);
     if ((first_exp == NULL) || (first_exp->kind != ARRAY)) {
-      print_error(10, Exp->son->lineno);
+      print_error(10, NULL, Exp->son->lineno);
     } else {
       // check whether the index is an integer
       Type index = getType_Exp(Exp->son->bro->bro);
       if ((index == NULL) || (index->kind != BASIC) || (index->u.basic != INT)) {
-        print_error(12, Exp->son->lineno);
+        print_error(12, NULL, Exp->son->lineno);
       } else {
         result = first_exp->u.array.elem;
       }
@@ -509,7 +501,7 @@ Type getType_Exp(struct Node* Exp) {
   } else if (compareSubExpression(Exp, rule15) == 1) {
     Type first_exp_type = getType_Exp(Exp->son);
     if ((first_exp_type == NULL) || (first_exp_type->kind != STRUCTURE)) {
-      print_error(13, Exp->son->lineno);
+      print_error(13, NULL, Exp->son->lineno);
     } else {
       //check whether there is a matching ID in Exp.type
       FieldList temp = first_exp_type->u.structure;
@@ -521,13 +513,13 @@ Type getType_Exp(struct Node* Exp) {
         temp = temp->tail;
       }
       if (temp == NULL) {
-        print_error(14, Exp->son->lineno);
+        print_error(14, Exp->son->bro->bro->value, Exp->son->lineno);
       }
     }
   } else if (compareSubExpression(Exp, rule16) == 1) {
     struct Symbol *symbol = find_symbol(hash_table, Exp->son->value, VARIABLE);
     if (symbol == NULL) {
-      print_error(1, Exp->son->lineno);
+      print_error(1, Exp->son->value, Exp->son->lineno);
     } else {
       result = symbol->type;
     }
@@ -563,9 +555,34 @@ int compareArgv_args(struct Node* Args, struct argv* function_argv) {
   }
 }
 
-void print_error(int error_type, int lineno){
-  if(error_line!=lineno){  //because every line has only one error
-    printf("Error type %d at Line %d: .\n", error_type, lineno);
+void print_error(int error_type, char* target, int lineno){
+  char *information[20] ={"", // 0
+                          "Undefined variable", // 1
+                          "Undefined function", // 2
+                          "Redefined variable", // 3
+                          "Redefined function", // 4
+                          "Type mismatched for assignment", // 5
+                          "The left-hand side of an assignment must be a variable", // 6
+                          "Type mismatched for operands", // 7
+                          "Type mismatched for return", // 8
+                          "Function's arguments is not applicable", // 9
+                          "The first Exp is not an array", // 10
+                          "It is not a function", // 11
+                          "The Exp between [ and ] is not an integer", // 12
+                          "Illegal use of \".\"", // 13
+                          "Non-existent field", // 14
+                          "Redefined field, or tried to initialize the field", // 15
+                          "Duplicated name", // 16
+                          "Undefined structure", // 17
+                          "Undefined function", // 18
+                          "Inconsistent declaration of function" //19
+  };
+  if((error_line!=lineno)&&(error_type<=19)&&(error_type>=1)){  //because every line has only one error
+    if(target!=NULL) {
+      printf("Error type %d at Line %d: \"%s\": %s.\n", error_type, lineno, target, information[error_type]);
+    }else{
+      printf("Error type %d at Line %d: %s.\n", error_type, lineno, information[error_type]);
+    }
     error_line = lineno;
   }
 }

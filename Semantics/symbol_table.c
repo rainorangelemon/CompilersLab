@@ -154,17 +154,17 @@ void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type typ
     if ((temp != NULL) && (temp->depth == current_depth(hash_table))) {
       if ((temp->kind != FUNC) ||
           ((temp->kind == FUNC) && (temp->function->hasCompSt == 1) && (function->hasCompSt == 1))) {
-        print_error(4, lineno);
+        print_error(4, name, lineno);
         return;
       } else {
         if (compare_type_type(temp->function->return_type, function->return_type) != 1) {
-          print_error(19, lineno);
+          print_error(19, name, lineno);
           return;
         } else if (temp->function->argc != function->argc) {
-          print_error(19, lineno);
+          print_error(19, name, lineno);
           return;
         } else if (compare_argv_argv(temp->function->argv1, function->argv1) != 1) {
-          print_error(19, lineno);
+          print_error(19, name, lineno);
           return;
         } else {
           if (temp->function->hasCompSt == 0) {
@@ -177,23 +177,23 @@ void insert_symbol(struct Hash_table* hash_table, char* name, int kind, Type typ
   } else if (kind == VARIABLE) {
     struct Symbol *temp = find_symbol(hash_table, name, VARIABLE);
     if ((temp != NULL) && (temp->depth == current_depth(hash_table))) {
-      print_error(3, lineno);
+      print_error(3, name, lineno);
       return;
     }
     temp = find_symbol(hash_table, name, STRUCT);
     if ((temp != NULL) && (temp->depth == current_depth(hash_table))) {
-      print_error(3, lineno);
+      print_error(3, name, lineno);
       return;
     }
   } else if (kind == STRUCT) {
     struct Symbol *temp = find_symbol(hash_table, name, VARIABLE);
     if ((temp != NULL) && (temp->depth == current_depth(hash_table))) {
-      print_error(16, lineno);
+      print_error(16, name, lineno);
       return;
     }
     temp = find_symbol(hash_table, name, STRUCT);
     if ((temp != NULL) && (temp->depth == current_depth(hash_table))) {
-      print_error(16, lineno);
+      print_error(16, name, lineno);
       return;
     }
   }
