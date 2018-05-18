@@ -167,6 +167,7 @@ Type createType_StructSpecifier(Node* StructSpecifier) {
     struct Symbol *structure = find_symbol(hash_table, Tag->son->value, STRUCT);
     if (structure == NULL) {
       print_error(17, Tag->lineno);
+      return NULL;
     }
     return structure->type;
   }
