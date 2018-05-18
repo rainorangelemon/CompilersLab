@@ -29,7 +29,7 @@ void check_error_StmtList(struct Node* StmtList, Type returnType);
 void check_error_Stmt(struct Node* Stmt, Type returnType);
 
 FieldList createFieldList_DefList(Node* DefList, FieldList structure, int insideStruct);
-FieldList createFieldList_Def(struct Node* DefList, int insideStruct);
+FieldList createFieldList_Def(struct Node* DefList, FieldList structure, int insideStruct);
 void createFieldList_DecList(struct Node* DecList, Type type, FieldList fieldList, int insideStruct);
 void createFieldList_Dec(struct Node* Dec, Type type, FieldList fieldList, int insideStruct);
 
@@ -153,19 +153,18 @@ Type createType_StructSpecifier(Node* StructSpecifier) {
     FieldList structure = (FieldList) malloc(sizeof(struct FieldList_));
     memset(structure, 0, sizeof(struct FieldList_));
     structure->name = NULL;
-    structure = createFieldList_DefList(OptTag->bro->bro, structure, 1);
+    createFieldList_DefList(OptTag->bro->bro, structure, 1);
     pop_env(hash_table);
     result->u.structure = structure;
     result->kind = STRUCTURE;
     if (OptTag->son != NULL) {
-      struct Symbol symbol;
       insert_symbol(hash_table, OptTag->son->value, STRUCT, result, NULL, OptTag->son->lineno);
     }
     return result;
   } else {
     Node *Tag = StructSpecifier->son->bro;
     struct Symbol temp;
-    struct Symbol *structure = find_symbol(hash_table, Tag->value, STRUCT);
+    struct Symbol *structure = find_symbol(hash_table, Tag->son->value, STRUCT);
     if (structure == NULL) {
       print_error(17, Tag->lineno);
     }
@@ -190,7 +189,6 @@ Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fiel
         // begin to check the name redundancy
         FieldList temp = fieldList;
         while (temp->tail != NULL) {
-          printf("temp->name: %s\n", temp->name);
           if (strcmp(temp->name, name) == 0) {
             print_error(15, VarDec->son->lineno);
             return type;
@@ -317,23 +315,16 @@ void check_error_Stmt(struct Node* Stmt, Type returnType) {
 
 // LOCAL Definitions
 
-// TODO: check the output
 FieldList createFieldList_DefList(struct Node* DefList, FieldList result, int insideStruct) {
   if (DefList->son != NULL) {
-    FieldList head = createFieldList_Def(DefList->son, insideStruct);
-    FieldList tail = createFieldList_DefList(DefList->son->bro, insideStruct);
-    FieldList p = head;
-    while (p->tail != NULL) {
-      p = p->tail;
-    }
-    p->tail = tail;
-    return head;
+    createFieldList_Def(DefList->son, result, insideStruct);
+    createFieldList_DefList(DefList->son->bro, result, insideStruct);
+    return result;
   } else {
     return NULL;
   }
 }
 
-//TODO: rename the function
 FieldList createFieldList_Def(struct Node* Def, FieldList result, int insideStruct) {
   Type type = createType_Specifier(Def->son);
   createFieldList_DecList(Def->son->bro, type, result, insideStruct);
