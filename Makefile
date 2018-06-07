@@ -12,101 +12,110 @@ debug:
 	mv lex.yy.c Lex
 	gcc Lex/main.c Lex/tree.c Syntax/syntax.tab.c Semantics/symbol_table.c Semantics/semantic.c -ll -ly -o parser
 
-testSyntax1:
+test1_1:
 	./parser Test/SyntaTest/test1.cmm	
 
-testSyntax2:
+test1_2:
 	./parser Test/SyntaTest/test2.cmm
 
-testSyntax3:
+test1_3:
 	./parser Test/SyntaTest/test3.cmm
 
-testSyntax4:
+test1_4:
 	./parser Test/SyntaTest/test4.cmm
 
-testSyntax5:
+test1_5:
 	./parser Test/SyntaTest/test5.cmm
 
-testSyntax6:
+test1_6:
 	./parser Test/SyntaTest/test6.cmm
 
-testSyntax7:
+test1_7:
 	./parser Test/SyntaTest/test7.cmm
 
-testSyntax8:
+test1_8:
 	./parser Test/SyntaTest/test8.cmm
 
-testSyntax9:
+test1_9:
 	./parser Test/SyntaTest/test9.cmm	
 
-testSyntax10:
+test1_10:
 	./parser Test/SyntaTest/test10.cmm
 
-testSeman1:
+test2_1:
 	./parser Test/SemanTest/test1.cmm
 
-testSeman2:
+test2_2:
 	./parser Test/SemanTest/test2.cmm
 
-testSeman3:
+test2_3:
 	./parser Test/SemanTest/test3.cmm
 
-testSeman4:
+test2_4:
 	./parser Test/SemanTest/test4.cmm
 
-testSeman5:
+test2_5:
 	./parser Test/SemanTest/test5.cmm
 
-testSeman6:
+test2_6:
 	./parser Test/SemanTest/test6.cmm
 
-testSeman7:
+test2_7:
 	./parser Test/SemanTest/test7.cmm
 
-testSeman8:
+test2_8:
 	./parser Test/SemanTest/test8.cmm
 
-testSeman9:
+test2_9:
 	./parser Test/SemanTest/test9.cmm
 
-testSeman10:
+test2_10:
 	./parser Test/SemanTest/test10.cmm
 
-testSeman11:
+test2_11:
 	./parser Test/SemanTest/test11.cmm
 
-testSeman12:
+test2_12:
 	./parser Test/SemanTest/test12.cmm
 
-testSeman13:
+test2_13:
 	./parser Test/SemanTest/test13.cmm
 
-testSeman14:
+test2_14:
 	./parser Test/SemanTest/test14.cmm
 
-testSeman15:
+test2_15:
 	./parser Test/SemanTest/test15.cmm
 
-testSeman16:
+test2_16:
 	./parser Test/SemanTest/test16.cmm
 
-testSeman17:
+test2_17:
 	./parser Test/SemanTest/test17.cmm
 
-testSeman18:
+test2_18:
 	./parser Test/SemanTest/test18.cmm
 
-testSeman19:
+test2_19:
 	./parser Test/SemanTest/test19.cmm
 
-testSeman20:
+test2_20:
 	./parser Test/SemanTest/test20.cmm
 
-testSeman21:
+test2_21:
 	./parser Test/SemanTest/test21.cmm
 
-testSeman22:
+test2_22:
 	./parser Test/SemanTest/test22.cmm
 
-testSeman23:
+test2_23:
 	./parser Test/SemanTest/test23.cmm
+
+test3_1:
+        ./parser Test/InterCodeTest/test1 test1.ir
+
+test3_2:
+        ./parser Test/InterCodeTest/test2 test2.ir
+
+test3_3:
+        ./parser Test/InterCodeTest/test3 test3.ir
