@@ -9,37 +9,6 @@ struct Hash_table* hash_table;
 
 int error_line = -1;
 
-void check_error(Node* tree_root);
-
-void check_error_ExtDefList(Node* ExtDefList);
-void check_error_ExtDef(Node* ExtDef);
-Type valueType_ExtDecList(Node* ExtDecList, Type type);
-
-Type createType_Specifier(Node* Specifier);
-Type createType_StructSpecifier(Node* StructSpecifier);
-
-Type createType_VarDec(Node* VarDec, Type type, int insideStruct, FieldList fieldList);
-void createSymbol_function_FunDec(struct Node* FunDec, int isDeclaration, Type returnType);
-
-Type valueSymbol_function_VarList(struct Node* VarList, struct Symbol_function* function);
-Type createType_ParamDec(struct Node* ParamDec);
-
-void check_error_CompSt(struct Node* CompSt, Type returnType);
-void check_error_StmtList(struct Node* StmtList, Type returnType);
-void check_error_Stmt(struct Node* Stmt, Type returnType);
-
-FieldList createFieldList_DefList(Node* DefList, FieldList structure, int insideStruct);
-FieldList createFieldList_Def(struct Node* DefList, FieldList structure, int insideStruct);
-void createFieldList_DecList(struct Node* DecList, Type type, FieldList fieldList, int insideStruct);
-void createFieldList_Dec(struct Node* Dec, Type type, FieldList fieldList, int insideStruct);
-
-Type getType_Exp(struct Node* Exp);
-int compareArgv_args(struct Node* Args, struct argv* function_argv);
-
-int compare_type_type(Type type_a, Type type_b);
-int compare_type_kind(Type type, int kind);
-void print_error(int error_type, char* target, int lineno);
-
 
 // check whether the expression, name, matches with tree_root
 int compareSubExpression(Node* tree_root, char* name){
@@ -414,8 +383,8 @@ Type getType_Exp(struct Node* Exp) {
     if (!((compare_type_kind(type1, INT) == 1) && (compare_type_kind(type2, INT) == 1))) {
       print_error(7, NULL, Exp->son->lineno);
     }
-    result->kind = BASIC;
     result = (Type) malloc(sizeof(struct Type_));
+    result->kind = BASIC;
     memset(result, 0, sizeof(struct Type_));
     result->u.basic = INT;
   } else if ((compareSubExpression(Exp, rule4) == 1) || (compareSubExpression(Exp, rule5) == 1) ||

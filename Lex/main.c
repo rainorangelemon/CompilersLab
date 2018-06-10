@@ -8,8 +8,6 @@ extern int yylineno;
 extern Node* root;
 extern int errorFlag;
 
-struct Hash_table* hash_table;
-
 int main(int argc, char* argv[])
 {
   if(argc<=1) return 1;
