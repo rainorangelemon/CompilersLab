@@ -45,6 +45,7 @@ struct Symbol_function{
 struct Symbol{
   char* name;
   char* code_name;
+  int isAddress;
   enum Symbol_TYPE{ UNKNOWN = 0, VARIABLE=6, FUNC=7, STRUCT=8 } kind;
   union {
     Type type;

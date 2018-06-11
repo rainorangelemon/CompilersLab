@@ -6,7 +6,7 @@
 #include <string.h>
 #include "../Semantics/data_type.h"
 
-void insert_symbol_intercodes(struct Hash_table* hash_table, char* name, int kind, Type type, struct Symbol_function* function){
+void insert_symbol_intercodes(struct Hash_table* hash_table, int isAddress, char* name, int kind, Type type, struct Symbol_function* function){
   struct Symbol *new_symbol = (struct Symbol *) malloc(sizeof(struct Symbol));
   memset(new_symbol, 0, sizeof(struct Symbol));
   // get the index of new symbol
@@ -14,6 +14,7 @@ void insert_symbol_intercodes(struct Hash_table* hash_table, char* name, int kin
   new_symbol->index = index;
   new_symbol->kind = kind;
   new_symbol->name = name;
+  new_symbol->isAddress = isAddress;
   new_symbol->code_name = NULL;
   if (kind != FUNC) {
     new_symbol->type = type;
