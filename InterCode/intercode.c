@@ -48,7 +48,7 @@ char* printCodes(InterCode interCode);
 
 // check whether the expression, name, matches with tree_root
 int compareExpression(Node* tree_root, char* name){
-  printf("tree_root:%s, name:%s, lineno: %d\n", tree_root->name, name, tree_root->lineno); // just for debug
+//  printf("tree_root:%s, name:%s, lineno: %d\n", tree_root->name, name, tree_root->lineno); // just for debug
   if(tree_root->son==NULL){
     return -1;
   }else{
@@ -523,24 +523,24 @@ void translate_Cond(struct Node* Exp, char* label_true, char* label_false, Inter
 
 Type translate_Exp(struct Node* Exp, InterCodes head, char* place) {
   char
-    rule1[30] = "Exp ASSIGNOP Exp", // included in this func
-    rule2[30] = "Exp AND Exp",
-    rule3[30] = "Exp OR Exp",
-    rule4[30] = "Exp RELOP Exp",
-    rule5[30] = "Exp PLUS Exp",
-    rule6[30] = "Exp MINUS Exp",
-    rule7[30] = "Exp STAR Exp",
-    rule8[30] = "Exp DIV Exp",
-    rule9[30] = "LP Exp RP",
-    rule10[30] = "MINUS Exp",
-    rule11[30] = "NOT Exp",
-    rule12[30] = "ID LP Args RP",
-    rule13[30] = "ID LP RP",
-    rule14[30] = "Exp LB Exp RB",
-    rule15[30] = "Exp DOT ID",
-    rule16[30] = "ID",
-    rule17[30] = "INT",
-    rule18[30] = "FLOAT"; // this will not appear
+    rule1[] = "Exp ASSIGNOP Exp",
+    rule2[] = "Exp AND Exp",
+    rule3[] = "Exp OR Exp",
+    rule4[] = "Exp RELOP Exp",
+    rule5[] = "Exp PLUS Exp",
+    rule6[] = "Exp MINUS Exp",
+    rule7[] = "Exp STAR Exp",
+    rule8[] = "Exp DIV Exp",
+    rule9[] = "LP Exp RP",
+    rule10[] = "MINUS Exp",
+    rule11[] = "NOT Exp",
+    rule12[] = "ID LP Args RP",
+    rule13[] = "ID LP RP",
+    rule14[] = "Exp LB Exp RB",
+    rule15[] = "Exp DOT ID",
+    rule16[] = "ID",
+    rule17[] = "INT",
+    rule18[] = "FLOAT";
   Type result = NULL;
   if (compareExpression(Exp, rule17) == 1) {
     if (place != NULL) {
@@ -719,12 +719,12 @@ Type translate_Exp(struct Node* Exp, InterCodes head, char* place) {
       }
     }
   } else if (compareExpression(Exp, rule1) == 1) {
+    char
+      rule14[] = "Exp LB Exp RB",
+      rule15[] = "Exp DOT ID",
+      rule16[] = "ID";
     struct Node *Exp1 = Exp->son;
-    printf("here11!\n");
-    printf("%s!\n", Exp1->son->name);
-    printf("%s!\n", rule13);
     if (compareExpression(Exp1, rule16) == 1) {  // ID
-      printf("here3!\n");
       char *variable = lookup_symbols(Exp1->son->value);
       char *t1 = new_temp();
       result = translate_Exp(Exp1->bro->bro, head, t1);
@@ -762,7 +762,6 @@ Type translate_Exp(struct Node* Exp, InterCodes head, char* place) {
         }
       }
     } else if (compareExpression(Exp1, rule14) == 1) {  // Exp LB Exp RB
-      printf("here2!\n");
       char *t1 = new_temp();
       result = translate_Exp(Exp1->son, head, t1); // basic
       char *t2 = new_temp();
@@ -810,7 +809,6 @@ Type translate_Exp(struct Node* Exp, InterCodes head, char* place) {
         }
       }
     } else { //  Exp DOT ID
-      printf("here123!\n");
       char *t1 = new_temp();
       char* address = new_temp();
       result = translate_Exp(Exp1->son, head, t1);
