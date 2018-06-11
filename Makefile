@@ -3,14 +3,14 @@ all:
 	mv syntax.tab.c	syntax.tab.h Syntax
 	flex Lex/lexical.l
 	mv lex.yy.c Lex
-	gcc Lex/main.c Lex/tree.c Syntax/syntax.tab.c Semantics/symbol_table.c Semantics/semantic.c InterCode/intercode.c InterCode/symbol_table_intercodes.c -ll -ly -o parser
+	gcc InterCode/optimize.c Lex/main.c Lex/tree.c Syntax/syntax.tab.c Semantics/symbol_table.c Semantics/semantic.c InterCode/intercode.c InterCode/symbol_table_intercodes.c -ll -ly -o parser
 
 debug:
 	bison -d -t Syntax/syntax.y
 	mv syntax.tab.c	syntax.tab.h Syntax
 	flex Lex/lexical.l
 	mv lex.yy.c Lex
-	gcc Lex/main.c Lex/tree.c Syntax/syntax.tab.c Semantics/symbol_table.c Semantics/semantic.c InterCode/intercode.c InterCode/symbol_table_intercodes.c -ll -ly -o parser
+	gcc InterCode/optimize.c Lex/main.c Lex/tree.c Syntax/syntax.tab.c Semantics/symbol_table.c Semantics/semantic.c InterCode/intercode.c InterCode/symbol_table_intercodes.c -ll -ly -o parser
 
 test1_1:
 	./parser Test/SyntaTest/test1.cmm	

@@ -44,7 +44,6 @@ void translate_Args(struct Node* Args, InterCodes head, Arg_list arg_list);
 int calculate_space(Type type);
 int calculate_offset_in_struct(FieldList fieldList, char* name);
 Type get_type_in_struct(FieldList fieldList, char* name);
-char* printCodes(InterCode interCode);
 
 // check whether the expression, name, matches with tree_root
 int compareExpression(Node* tree_root, char* name){
@@ -207,8 +206,18 @@ void translate_root(Node* tree_root, char* path) {
   memset(head, 0, sizeof(struct InterCodes_));
   translate_ExtDefList(tree_root->son, head);
   InterCodes temp = head;
-  while(temp!=NULL){
-    printf("%s\n", printCodes(temp->code));
+  while (temp != NULL) {
+    if (temp->code->kind != EMPTY) {
+      printf("%s\n", printCodes(temp->code));
+    }
+    temp = temp->next;
+  }
+  optimize_InterCodes(head);
+  temp = head;
+  while (temp != NULL) {
+    if (temp->code->kind != EMPTY) {
+      printf("%s\n", printCodes(temp->code));
+    }
     temp = temp->next;
   }
   // TODO: write into file
@@ -678,25 +687,31 @@ Type translate_Exp(struct Node* Exp, InterCodes head, char* place) {
     translate_Exp(Exp->son->bro->bro, head, t2); // offset
     result = result->u.array.elem;
     if(place!=NULL) {
+      char* address = new_temp();
+      char* middle_address = new_temp();
       int size = calculate_space(result);
       char *mathop1 = (char *) malloc(2 * sizeof(char));
       sprintf(mathop1, "*");
       addCode(head, create_code_binop(MATHOP,
-                                      create_operand(VARIABLE, 0, place),
+                                      create_operand(VARIABLE, 0, middle_address),
                                       create_operand(CONSTANT, size, NULL),
                                       create_operand(MATHOP, 0, mathop1),
                                       create_operand(VARIABLE, 0, t2)));
       char *mathop2 = (char *) malloc(2 * sizeof(char));
       sprintf(mathop2, "+");
       addCode(head, create_code_binop(MATHOP,
-                                      create_operand(VARIABLE, 0, place),
-                                      create_operand(VARIABLE, 0, place),
+                                      create_operand(VARIABLE, 0, address),
+                                      create_operand(VARIABLE, 0, middle_address),
                                       create_operand(MATHOP, 0, mathop2),
                                       create_operand(VARIABLE, 0, t1)));
       if (result->kind == BASIC) {
         addCode(head, create_code_assign(RIGHT_STAR,
                                          create_operand(VARIABLE, 0, place),
-                                         create_operand(VARIABLE, 0, place)));
+                                         create_operand(VARIABLE, 0, address)));
+      }else{
+        addCode(head, create_code_assign(ASSIGN,
+                                         create_operand(VARIABLE, 0, place),
+                                         create_operand(VARIABLE, 0, address)));
       }
     }
   } else if (compareExpression(Exp, rule15) == 1) {
@@ -705,17 +720,22 @@ Type translate_Exp(struct Node* Exp, InterCodes head, char* place) {
     int size = calculate_offset_in_struct(result->u.structure, Exp->son->bro->bro->value);
     result = get_type_in_struct(result->u.structure, Exp->son->bro->bro->value);
     if(place!=NULL) {
+      char* address = new_temp();
       char *mathop = (char *) malloc(2 * sizeof(char));
       sprintf(mathop, "+");
       addCode(head, create_code_binop(MATHOP,
-                                      create_operand(VARIABLE, 0, place),
+                                      create_operand(VARIABLE, 0, address),
                                       create_operand(CONSTANT, size, NULL),
                                       create_operand(MATHOP, 0, mathop),
                                       create_operand(VARIABLE, 0, t1)));
       if (result->kind == BASIC) {
         addCode(head, create_code_assign(RIGHT_STAR,
                                          create_operand(VARIABLE, 0, place),
-                                         create_operand(VARIABLE, 0, place)));
+                                         create_operand(VARIABLE, 0, address)));
+      }else{
+        addCode(head, create_code_assign(ASSIGN,
+                                         create_operand(VARIABLE, 0, place),
+                                         create_operand(VARIABLE, 0, address)));
       }
     }
   } else if (compareExpression(Exp, rule1) == 1) {
@@ -770,9 +790,10 @@ Type translate_Exp(struct Node* Exp, InterCodes head, char* place) {
       int size = calculate_space(result);
       char* mathop1 = (char*)malloc(2*sizeof(char));
       sprintf(mathop1, "*");
+      char* middle_address = new_temp();
       char* address = new_temp();
       addCode(head, create_code_binop(MATHOP,
-                                      create_operand(VARIABLE, 0, address),
+                                      create_operand(VARIABLE, 0, middle_address),
                                       create_operand(CONSTANT, size, NULL),
                                       create_operand(MATHOP, 0, mathop1),
                                       create_operand(VARIABLE, 0, t2)));
@@ -780,7 +801,7 @@ Type translate_Exp(struct Node* Exp, InterCodes head, char* place) {
       sprintf(mathop2, "+");
       addCode(head, create_code_binop(MATHOP,
                                       create_operand(VARIABLE, 0, address),
-                                      create_operand(VARIABLE, 0, address),
+                                      create_operand(VARIABLE, 0, middle_address),
                                       create_operand(MATHOP, 0, mathop2),
                                       create_operand(VARIABLE, 0, t1)));
       char *t3 = new_temp();
@@ -979,6 +1000,8 @@ char* printCodes(InterCode interCode) {
     sprintf(code, "READ %s", print_operand(interCode->u.label.label, 1));
   } else if (interCode->kind == WRITE) {
     sprintf(code, "WRITE %s", print_operand(interCode->u.label.label, 1));
+  }else{
+    // do nothing
   }
   return code;
 }

@@ -22,8 +22,9 @@ struct InterCodes_{
 struct Operand_{
   enum{
     VARIABLE,
-    CONSTANT,
     LABEL,
+    CONSTANT,
+    ADDRESS,
     RELOP,
     MATHOP
   } kind;
@@ -41,7 +42,7 @@ struct Arg_list_{
 struct InterCode_{
   enum{LABEL, FUNCTION, ASSIGN, MATHOP,
        RIGHT_ADDR, RIGHT_STAR, LEFT_STAR, GOTO, RELOP, RETURN, DEC, ARG,
-       CALL, PARAM, READ, WRITE} kind;
+       CALL, PARAM, READ, WRITE, EMPTY} kind;
   union{
     struct {Operand left, right;} assign;
     struct {Operand result, op1, mathop, op2;} binop;
@@ -52,4 +53,6 @@ struct InterCode_{
 
 void insert_symbol_intercodes(struct Hash_table* hash_table, int isAddress, char* name, int kind, Type type, struct Symbol_function* function);
 struct Symbol* find_symbol_intercodes(struct Hash_table* hash_table, char* name, int kind);
+char* printCodes(InterCode interCode);
+void optimize_InterCodes(InterCodes interCodes);
 #endif
