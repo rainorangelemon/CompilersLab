@@ -250,45 +250,134 @@ void replace_label(InterCodes interCodes, Operand oldOperand, Operand newOperand
   }
 }
 
-void cover_assign_temps(Changes changes, InterCodes interCodes){
+void cover_assign_temps(InterCodes interCodes){
+  Changes changes = (Changes) malloc(sizeof(struct Changes_));
+  memset(changes, 0, sizeof(struct Changes_));
+  build_change_list(changes, interCodes);
   InterCodes temp = interCodes;
   while(temp!=NULL){
-//    printf("%s\n", printCodes(temp->code));
     if(temp->code->kind == ASSIGN){
-//      printf("begin find changes time\n");
-//      printf("%d %d\n", CONSTANT, temp->code->u.assign.left->kind);
       int change_left = find_changes_time(changes, temp->code->u.assign.left);
       int change_right = find_changes_time(changes, temp->code->u.assign.right);
-//      printf("end find changes time\n");
-//      printf("left: %d right: %d\n", change_left, change_right);
-//      printf("find_changes_times\n");
       // TODO: 仅更新基本块内的临时变量
       if((before_change(change_right, change_left)==1)&&((*temp->code->u.assign.left->u.name)!='v')){
         temp->code->kind = EMPTY;
-//        printf("begin replacing\n");
         replace_variable(interCodes, temp->code->u.assign.left, temp->code->u.assign.right);
-//        printf("end replacing\n");
       }
     }
-//    printf("%s\n", printCodes(temp->code));
     temp = temp->next;
   }
 }
 
-void merge_labels(Changes changes, InterCodes interCodes){
+InterCodes get_next_code(InterCodes interCodes){
+  InterCodes temp = interCodes->next;
+  while((temp!=NULL)){
+    if(temp->code->kind!=EMPTY){
+      return temp;
+    }else{
+      temp = temp->next;
+    }
+  }
+  return NULL;
+}
+
+void merge_labels(InterCodes interCodes){
   InterCodes temp = interCodes;
   while(temp!=NULL){
+    InterCodes nextCode = get_next_code(temp);
     if(temp->code->kind == LABEL){
-      if(temp->next!=NULL){
-        if(temp->next->code->kind == LABEL){
+      if(nextCode!=NULL){
+        if(nextCode->code->kind == LABEL){
             temp->code->kind = EMPTY;
             printf("begin replacing\n");
-            replace_label(interCodes, temp->code->u.label.label, temp->next->code->u.label.label);
+            replace_label(interCodes, temp->code->u.label.label, nextCode->code->u.label.label);
             printf("end replacing\n");
         }
       }
     }
-    temp = temp->next;
+    temp = nextCode;
+  }
+}
+
+char* replace_relop(char* origin) {
+  char relop1[] = ">",
+    relop2[] = "<=",
+    relop3[] = "==",
+    relop4[] = "!=",
+    relop5[] = "<",
+    relop6[] = ">=";
+  char *result = (char *) malloc(3 * sizeof(char));
+  memset(result, 0, 3 * sizeof(char));
+  if (strcmp(origin, relop1)==0) {
+    sprintf(result, "<=");
+  }else if (strcmp(origin, relop2)==0){
+    sprintf(result, ">");
+  }else if (strcmp(origin, relop3)==0){
+    sprintf(result, "!=");
+  }else if (strcmp(origin, relop4)==0){
+    sprintf(result, "==");
+  }else if (strcmp(origin, relop5)==0){
+    sprintf(result, ">=");
+  }else if (strcmp(origin, relop6)==0){
+    sprintf(result, "<");
+  }
+  return result;
+}
+
+void reduce_goto(InterCodes interCodes) {
+  InterCodes temp = interCodes;
+  while (temp != NULL) {
+    InterCodes nextCode = get_next_code(temp);
+    if (temp->code->kind == RELOP) {
+      if (nextCode != NULL) {
+        InterCodes nextNextCode = get_next_code(nextCode);
+        if (nextNextCode != NULL) {
+          if ((nextCode->code->kind == GOTO)
+              && (nextNextCode->code->kind == LABEL)
+              && (strcmp(temp->code->u.goto_con.label->u.name, nextNextCode->code->u.label.label->u.name) == 0)) {
+            temp->code->u.goto_con.label->u.name = nextCode->code->u.label.label->u.name;
+            nextCode->code->kind = EMPTY;
+            nextNextCode->code->kind = EMPTY;
+            temp->code->u.goto_con.relop->u.name = replace_relop(temp->code->u.goto_con.relop->u.name);
+          }
+        }
+      }
+    }
+    temp = nextCode;
+  }
+}
+
+void calculate_constant(InterCodes interCodes) {
+  InterCodes temp = interCodes;
+  while (temp != NULL) {
+    InterCodes nextCode = get_next_code(temp);
+    if (temp->code->kind == MATHOP) {
+      if((temp->code->u.binop.op1->kind==CONSTANT)&&(temp->code->u.binop.op2->kind==CONSTANT)){
+        char relop1[] = "+",
+          relop2[] = "-",
+          relop3[] = "*",
+          relop4[] = "/";
+        int value = 0;
+        char* origin = temp->code->u.binop.mathop->u.name;
+        if (strcmp(origin, relop1)==0) {
+          value = temp->code->u.binop.op1->u.value + temp->code->u.binop.op2->u.value;
+        }else if (strcmp(origin, relop2)==0){
+          value = temp->code->u.binop.op1->u.value - temp->code->u.binop.op2->u.value;
+        }else if (strcmp(origin, relop3)==0){
+          value = temp->code->u.binop.op1->u.value * temp->code->u.binop.op2->u.value;
+        }else{
+          value = temp->code->u.binop.op1->u.value / temp->code->u.binop.op2->u.value;
+        }
+        temp->code->kind = ASSIGN;
+        Operand left = temp->code->u.binop.result;
+        Operand right = temp->code->u.binop.op1;
+        right->u.value = value;
+        free(temp->code->u.binop.op2);
+        temp->code->u.assign.left = left;
+        temp->code->u.assign.right = right;
+      }
+    }
+    temp = nextCode;
   }
 }
 
@@ -297,12 +386,14 @@ void merge_labels(Changes changes, InterCodes interCodes){
 //  CALL, PARAM, READ, WRITE
 
 void optimize_InterCodes(InterCodes interCodes){
-  Changes changes = (Changes) malloc(sizeof(struct Changes_));
-  memset(changes, 0, sizeof(struct Changes_));
-  build_change_list(changes, interCodes);
-  delete_zero(interCodes);
-  printf("here\n");
-  merge_labels(changes, interCodes);
-  cover_assign_temps(changes, interCodes);
-  printf("leaving\n");
+  for(int i=0; i<2; i++) {
+    delete_zero(interCodes);
+    printf("here\n");
+    merge_labels(interCodes);
+    printf("reduce_goto\n");
+    reduce_goto(interCodes);
+//    cover_assign_temps(interCodes);
+    calculate_constant(interCodes);
+    printf("leaving\n");
+  }
 }

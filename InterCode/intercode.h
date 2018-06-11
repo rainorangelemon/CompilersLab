@@ -21,12 +21,12 @@ struct InterCodes_{
 
 struct Operand_{
   enum{
-    VARIABLE,
-    LABEL,
-    CONSTANT,
-    ADDRESS,
-    RELOP,
-    MATHOP
+    LABEL=9,
+    VARIABLE=6,
+    CONSTANT=10,
+    MATHOP=11,
+    ADDRESS=12,
+    RELOP=13,
   } kind;
   union{
     int value;
@@ -40,9 +40,9 @@ struct Arg_list_{
 };
 
 struct InterCode_{
-  enum{LABEL, FUNCTION, ASSIGN, MATHOP,
-       RIGHT_ADDR, RIGHT_STAR, LEFT_STAR, GOTO, RELOP, RETURN, DEC, ARG,
-       CALL, PARAM, READ, WRITE, EMPTY} kind;
+  enum{LABEL=9, FUNCTION=7, ASSIGN=14, MATHOP=11,
+       RIGHT_ADDR=15, RIGHT_STAR=16, LEFT_STAR=17, GOTO=18, RELOP=13, RETURN=19, DEC=20, ARG=21,
+       CALL=22, PARAM=23, READ=24, WRITE=25, EMPTY=26} kind;
   union{
     struct {Operand left, right;} assign;
     struct {Operand result, op1, mathop, op2;} binop;

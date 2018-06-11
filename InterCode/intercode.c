@@ -130,7 +130,14 @@ Operand create_operand(int kind, int value, char* name){
 
 char* print_operand(Operand operand, int addHashTag){
   if(operand->kind!=CONSTANT){
-    return operand->u.name;
+    if(operand->kind==ADDRESS){
+      char* result = (char*)malloc(20*sizeof(char));
+      memset(result, 0, 20*sizeof(char));
+      sprintf(result, "&%s", operand->u.name);
+      return result;
+    }else {
+      return operand->u.name;
+    }
   }else {
     char* result = (char*)malloc(20*sizeof(char));
     memset(result, 0, 20*sizeof(char));
