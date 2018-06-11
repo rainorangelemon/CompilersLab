@@ -52,6 +52,7 @@ void check_error(Node* tree_root) {
   memset(symbol_function, 0, sizeof(struct Symbol_function));
   symbol_function->argc = 1;
   symbol_function->argv1 = (struct argv*)malloc(sizeof(struct argv));
+  memset(symbol_function->argv1, 0, sizeof(struct argv));
   symbol_function->argv1->type = (Type)malloc(sizeof(struct Type_));
   symbol_function->argv1->type->kind = BASIC;
   symbol_function->argv1->type->u.basic = INT;
@@ -69,11 +70,14 @@ void check_error(Node* tree_root) {
   symbol_function->argc = 0;
   symbol_function->argv1 = NULL;
   symbol_function->return_type = (Type)malloc(sizeof(struct Type_));
+  memset(symbol_function->return_type, 0, sizeof(struct Type_));
   symbol_function->return_type->kind = BASIC;
   symbol_function->return_type->u.basic = INT;
   symbol_function->define_lineno = 0;
   symbol_function->hasCompSt = 1;
   insert_symbol(hash_table, read, FUNC, NULL, symbol_function, 0);
+
+  check_error_ExtDefList(root->son);
 
   // check error 18
   struct Symbol *test_symbol = hash_table->stack_head->down;
@@ -268,7 +272,7 @@ Type valueSymbol_function_VarList(struct Node* VarList, struct Symbol_function* 
 
 Type createType_ParamDec(struct Node* ParamDec) {
   Type type = createType_Specifier(ParamDec->son);
-  createType_VarDec(ParamDec->son->bro, type, 0, NULL);
+  type = createType_VarDec(ParamDec->son->bro, type, 0, NULL);
   return type;
 }
 
