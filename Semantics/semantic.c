@@ -45,7 +45,36 @@ void check_error(Node* tree_root) {
   }
   hash_table = create_table();
   push_env(hash_table);
-  check_error_ExtDefList(root->son);
+
+  // insert write symbol
+  char write[] = "write";
+  struct Symbol_function *symbol_function = (struct Symbol_function *) malloc(sizeof(struct Symbol_function));
+  memset(symbol_function, 0, sizeof(struct Symbol_function));
+  symbol_function->argc = 1;
+  symbol_function->argv1 = (struct argv*)malloc(sizeof(struct argv));
+  symbol_function->argv1->type = (Type)malloc(sizeof(struct Type_));
+  symbol_function->argv1->type->kind = BASIC;
+  symbol_function->argv1->type->u.basic = INT;
+  symbol_function->return_type = (Type)malloc(sizeof(struct Type_));
+  symbol_function->return_type->kind = BASIC;
+  symbol_function->return_type->u.basic = INT;
+  symbol_function->define_lineno = 0;
+  symbol_function->hasCompSt = 1;
+  insert_symbol(hash_table, write, FUNC, NULL, symbol_function, 0);
+
+  // insert read symbol
+  char read[] = "read";
+  symbol_function = (struct Symbol_function *) malloc(sizeof(struct Symbol_function));
+  memset(symbol_function, 0, sizeof(struct Symbol_function));
+  symbol_function->argc = 0;
+  symbol_function->argv1 = NULL;
+  symbol_function->return_type = (Type)malloc(sizeof(struct Type_));
+  symbol_function->return_type->kind = BASIC;
+  symbol_function->return_type->u.basic = INT;
+  symbol_function->define_lineno = 0;
+  symbol_function->hasCompSt = 1;
+  insert_symbol(hash_table, read, FUNC, NULL, symbol_function, 0);
+
   // check error 18
   struct Symbol *test_symbol = hash_table->stack_head->down;
   while (test_symbol != NULL) {

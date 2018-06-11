@@ -2059,5 +2059,4 @@ yyreturn:
 yyerror(char* msg){
 	strcpy(hint, " ");
 	fprintf(stderr,"Error type B at line %d: %s. Unexpected near '%s', ", yylineno, msg, ((Node*)yylval.node)->value);
-
 }

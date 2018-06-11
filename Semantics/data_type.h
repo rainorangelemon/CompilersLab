@@ -67,6 +67,9 @@ struct Hash_table{
   struct Symbol* hash_table[hash_size];
 };
 
+unsigned int get_hash(char* name);
+int compareSubExpression(Node* tree_root, char* name);
+
 void check_error(Node* tree_root);
 
 void check_error_ExtDefList(Node* ExtDefList);

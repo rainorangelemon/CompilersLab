@@ -112,10 +112,10 @@ test2_23:
 	./parser Test/SemanTest/test23.cmm
 
 test3_1:
-        ./parser Test/InterCodeTest/test1 test1.ir
+	./parser Test/InterCodeTest/test1 test1.ir
 
 test3_2:
-        ./parser Test/InterCodeTest/test2 test2.ir
+	./parser Test/InterCodeTest/test2 test2.ir
 
 test3_3:
-        ./parser Test/InterCodeTest/test3 test3.ir
+	./parser Test/InterCodeTest/test3 test3.ir
