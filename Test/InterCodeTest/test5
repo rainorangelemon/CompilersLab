@@ -1,0 +1,6 @@
+int main()
+{
+  int op[2][3];
+  int a = op[0][0];
+  return 0;
+}
