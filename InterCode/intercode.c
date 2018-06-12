@@ -219,6 +219,8 @@ void translate_root(Node* tree_root, char* path) {
     }
     temp = temp->next;
   }
+
+  printf("\n\n");
   optimize_InterCodes(head);
   temp = head;
   while (temp != NULL) {

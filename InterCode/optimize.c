@@ -108,10 +108,8 @@ void build_change_list(Changes changes, InterCodes interCodes) {
   while (temp != NULL) {
     InterCode interCode = temp->code;
     if (interCode->kind == MATHOP) {
-      printf("MATHOP\n");
       refresh_list(changes, interCode->u.binop.result, time);
     } else if (interCode->kind == RELOP) {
-      printf("RELOP\n");
       // do nothing
     } else if ((interCode->kind == ARG)
                || (interCode->kind == LABEL)
@@ -122,11 +120,9 @@ void build_change_list(Changes changes, InterCodes interCodes) {
                || (interCode->kind == WRITE)
                || (interCode->kind == READ)) {
       if ((interCode->kind == READ)||(interCode->kind == PARAM)) {
-        printf("READ or PARAM\n");
         refresh_list(changes, interCode->u.label.label, time);
       }
     } else if ((interCode->kind != DEC)&&(interCode->kind!=EMPTY)) {
-      printf("ASSIGN\n");
       refresh_list(changes, interCode->u.assign.left, time);
     }
     temp = temp->next;
@@ -346,7 +342,6 @@ void replace_label(InterCodes interCodes, Operand oldOperand, Operand newOperand
         interCode->u.label.label->u.name = newOperand->u.name;
       }
     }else if(interCode->kind == RELOP){
-      printf("RELOP label: %s %s\n", interCode->u.goto_con.label->u.name, oldOperand->u.name);
       if(strcmp(interCode->u.goto_con.label->u.name, oldOperand->u.name)==0){
         interCode->u.goto_con.label->u.name = newOperand->u.name;
       }
@@ -378,7 +373,6 @@ void change_temp_operand(InterCodes interCodes, int current_index, int block_end
     InterCode interCode = temp->code;
     if (interCode->kind == MATHOP) {
       if(compare_operand_with_operand(interCode->u.binop.result, newOperand)){
-        printf("return: %d\n", current_index);
         return;
       }else{
         replace_variable_on_intercode(interCode, oldOperand, newOperand);
@@ -394,14 +388,12 @@ void change_temp_operand(InterCodes interCodes, int current_index, int block_end
                || (interCode->kind == WRITE)
                || (interCode->kind == READ)) {
       if (((interCode->kind == READ)||(interCode->kind == PARAM))&&(compare_operand_with_operand(interCode->u.label.label, newOperand))){
-        printf("return: %d\n", current_index);
         return;
       }else{
         replace_variable_on_intercode(interCode, oldOperand, newOperand);
       }
     } else if ((interCode->kind != DEC)&&(interCode->kind!=EMPTY)) {
       if(compare_operand_with_operand(interCode->u.assign.left, newOperand)){
-        printf("return: %d\n", current_index);
         return;
       }else{
         replace_variable_on_intercode(interCode, oldOperand, newOperand);
@@ -527,9 +519,7 @@ void merge_labels(InterCodes interCodes){
       if(nextCode!=NULL){
         if(nextCode->code->kind == LABEL){
             temp->code->kind = EMPTY;
-            printf("begin replacing\n");
             replace_label(interCodes, temp->code->u.label.label, nextCode->code->u.label.label);
-            printf("end replacing\n");
         }
       }
     }
@@ -619,38 +609,57 @@ void calculate_constant(InterCodes interCodes) {
   }
 }
 
+void delete_dead_label(InterCodes interCodes) {
+  InterCodes temp = interCodes;
+  while (temp != NULL) {
+    InterCodes nextCode = get_next_code(temp);
+    if (temp->code->kind == RETURN) {
+      if ((nextCode != NULL) && (nextCode->code->kind == GOTO)) {
+        nextCode->code->kind = EMPTY;
+        Operand label = nextCode->code->u.label.label;
+        int visit = 0;
+        InterCodes temp2 = interCodes;
+        while (temp2 != NULL) {
+          if(temp2->code->kind==GOTO){
+            if(compare_operand_with_operand(temp2->code->u.label.label, label)){
+              visit++;
+            }
+          }else if(temp2->code->kind==RELOP){
+            if(compare_operand_with_operand(temp2->code->u.goto_con.label, label)){
+              visit++;
+            }
+          }
+          temp2 = temp2->next;
+        }
+        if(visit==0){
+          temp2 = interCodes;
+          while (temp2 != NULL) {
+            if(temp2->code->kind==LABEL){
+              if(compare_operand_with_operand(temp2->code->u.label.label, label)){
+                temp2->code->kind=EMPTY;
+                break;
+              }
+            }
+            temp2 = temp2->next;
+          }
+        }
+      }
+    }
+    temp = nextCode;
+  }
+}
+
 //  LABEL, FUNCTION, ASSIGN, MATHOP,
 //  RIGHT_ADDR, RIGHT_STAR, LEFT_STAR, GOTO, RELOP, RETURN, DEC, ARG,
 //  CALL, PARAM, READ, WRITE
 
 void optimize_InterCodes(InterCodes interCodes){
-  InterCodes temp;
   for(int i=0; i<5; i++) {
     delete_zero(interCodes);
-    printf("here\n");
     merge_labels(interCodes);
-    printf("reduce_goto\n");
     reduce_goto(interCodes);
-    temp = interCodes;
-    while (temp != NULL) {
-      if (temp->code->kind != EMPTY) {
-        printf("%s\n", printCodes(temp->code));
-      }else{
-        printf("\n", printCodes(temp->code));
-      }
-      temp = temp->next;
-    }
     cover_assign_temps(interCodes);
-    temp = interCodes;
-    while (temp != NULL) {
-      if (temp->code->kind != EMPTY) {
-        printf("%s\n", printCodes(temp->code));
-      }else{
-        printf("\n", printCodes(temp->code));
-      }
-      temp = temp->next;
-    }
     calculate_constant(interCodes);
-    printf("leaving\n");
+    delete_dead_label(interCodes);
   }
 }
