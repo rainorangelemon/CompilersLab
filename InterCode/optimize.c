@@ -1,7 +1,9 @@
 //
 // Created by rainorangelemon on 6/11/18.
 //
-
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "intercode.h"
 
 typedef struct Changes_* Changes;

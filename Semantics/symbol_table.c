@@ -17,7 +17,8 @@ unsigned int get_hash(char* name){
   unsigned int val = 0, i;
   for(; *name; ++name){
     val = (val << 2) + *name;
-    if( i = val & ~hash_size) val = (val ^ (i >> 12)) & hash_size;
+    i = val & ~hash_size;
+    if( i) val = (val ^ (i >> 12)) & hash_size;
   }
   return val;
 }

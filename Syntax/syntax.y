@@ -6,7 +6,8 @@
   Node* root;
   int yylex();
   char hint[100]="";
-  yydebug = 1;
+  int yydebug = 1;
+  int yyerror(char* msg);
 %}
 
 %union {
@@ -153,7 +154,8 @@ Args : Exp COMMA Args 				{$$=createNode("Args", ""); addSon($$, $1); addSon($$,
 
 
 %%
-yyerror(char* msg){
+int yyerror(char* msg){
 	strcpy(hint, " ");
 	fprintf(stderr,"Error type B at line %d: %s. Unexpected near '%s', ", yylineno, msg, ((Node*)yylval.node)->value);
+    return 0;
 }

@@ -22,7 +22,6 @@ InterCode create_code_assign(int kind, Operand left, Operand right);
 InterCode create_code_binop(int kind, Operand result, Operand op1, Operand mathop, Operand op2);
 InterCode create_code_goto_con(int kind, Operand left, Operand relop, Operand right, Operand label);
 char* lookup_symbols(char* name);
-void translate_root(Node* tree_root, char* path);
 void translate_ExtDefList(Node* ExtDefList, InterCodes head);
 void translate_ExtDef(Node* ExtDef, InterCodes head);
 Type getType_Specifier(Node* Specifier);
@@ -212,31 +211,21 @@ void translate_root(Node* tree_root, char* path) {
   InterCodes head = (InterCodes) malloc(sizeof(struct InterCodes_));
   memset(head, 0, sizeof(struct InterCodes_));
   translate_ExtDefList(tree_root->son, head);
+  optimize_InterCodes(head);
+  // write into file
+  FILE * fp;
+  char *current_path = malloc(60*sizeof(char));
+  memset(current_path, 0, 60*sizeof(char));
+  sprintf(current_path, "../%s", path);
+  fp = fopen(path,"w+");
   InterCodes temp = head;
   while (temp != NULL) {
     if (temp->code->kind != EMPTY) {
-      printf("%s\n", printCodes(temp->code));
+      fprintf(fp, "%s\n", printCodes(temp->code));
     }
     temp = temp->next;
   }
-
-  printf("\n\n");
-  optimize_InterCodes(head);
-  temp = head;
-  while (temp != NULL) {
-    if (temp->code->kind != EMPTY) {
-      printf("%s\n", printCodes(temp->code));
-    }
-    temp = temp->next;
-  }
-  // TODO: write into file
-//  FILE * fp;
-//  char *path = malloc(60*sizeof(char));
-//  memset(path, 0, 60*sizeof(char));
-//  sprintf(path, "../%s", path);
-//  fp = fopen(path,"w+");
-//  // TODO: write into file
-//  fclose(fp);
+  fclose(fp);
   free_table(hash_table);
 }
 
