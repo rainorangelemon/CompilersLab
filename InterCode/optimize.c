@@ -25,6 +25,7 @@ struct Valid_Block_{
 };
 
 void free_code(InterCode interCode);
+int visit_label(InterCodes interCodes, Operand label);
 
 void remove_InterCode(InterCodes interCodes, InterCode interCode){
   InterCodes temp = interCodes;
@@ -211,12 +212,27 @@ void delete_zero(InterCodes interCodes){
             temp->code->kind = ASSIGN;
             temp->code->u.assign.left = result;
             temp->code->u.assign.right = left;
+          }else if((left->kind==CONSTANT)&&(left->u.value==0)){
+            temp->code->kind = ASSIGN;
+            temp->code->u.assign.left = result;
+            temp->code->u.assign.right->kind = CONSTANT;
+            temp->code->u.assign.right->u.value = 0;
+          }else if((right->kind==CONSTANT)&&(right->u.value==0)){
+            temp->code->kind = ASSIGN;
+            temp->code->u.assign.left = result;
+            temp->code->u.assign.right->kind = CONSTANT;
+            temp->code->u.assign.right->u.value = 0;
           }
         }else{
         if((right->kind==CONSTANT)&&(right->u.value==1)){
           temp->code->kind = ASSIGN;
           temp->code->u.assign.left = result;
           temp->code->u.assign.right = left;
+        }else if((left->kind==CONSTANT)&&(left->u.value==0)){
+          temp->code->kind = ASSIGN;
+          temp->code->u.assign.left = result;
+          temp->code->u.assign.right->kind = CONSTANT;
+          temp->code->u.assign.right->u.value = 0;
         }
       }
     }
@@ -565,10 +581,16 @@ void reduce_goto(InterCodes interCodes) {
           if ((nextCode->code->kind == GOTO)
               && (nextNextCode->code->kind == LABEL)
               && (strcmp(temp->code->u.goto_con.label->u.name, nextNextCode->code->u.label.label->u.name) == 0)) {
-            temp->code->u.goto_con.label->u.name = nextCode->code->u.label.label->u.name;
-            nextCode->code->kind = EMPTY;
-            nextNextCode->code->kind = EMPTY;
-            temp->code->u.goto_con.relop->u.name = replace_relop(temp->code->u.goto_con.relop->u.name);
+            if(visit_label(interCodes, nextNextCode->code->u.label.label)<=1) {
+              temp->code->u.goto_con.label->u.name = nextCode->code->u.label.label->u.name;
+              nextCode->code->kind = EMPTY;
+              nextNextCode->code->kind = EMPTY;
+              temp->code->u.goto_con.relop->u.name = replace_relop(temp->code->u.goto_con.relop->u.name);
+            }else{
+              temp->code->u.goto_con.label->u.name = nextCode->code->u.label.label->u.name;
+              nextCode->code->kind = EMPTY;
+              temp->code->u.goto_con.relop->u.name = replace_relop(temp->code->u.goto_con.relop->u.name);
+            }
           }
         }
       }
@@ -611,40 +633,62 @@ void calculate_constant(InterCodes interCodes) {
   }
 }
 
+int visit_label(InterCodes interCodes, Operand label){
+  int visit = 0;
+  InterCodes temp2 = interCodes;
+  while (temp2 != NULL) {
+    if (temp2->code->kind == GOTO) {
+      if (compare_operand_with_operand(temp2->code->u.label.label, label)) {
+        visit++;
+      }
+    } else if (temp2->code->kind == RELOP) {
+      if (compare_operand_with_operand(temp2->code->u.goto_con.label, label)) {
+        visit++;
+      }
+    }
+    temp2 = temp2->next;
+  }
+  return visit;
+}
+
+void delete_label(InterCodes interCodes, Operand label){
+  int visit = visit_label(interCodes, label);
+  InterCodes temp2 = interCodes;
+  if (visit == 0) {
+    temp2 = interCodes;
+    while (temp2 != NULL) {
+      if (temp2->code->kind == LABEL) {
+        if (compare_operand_with_operand(temp2->code->u.label.label, label)) {
+          temp2->code->kind = EMPTY;
+          break;
+        }
+      }
+      temp2 = temp2->next;
+    }
+  }
+}
+
 void delete_dead_label(InterCodes interCodes) {
   InterCodes temp = interCodes;
   while (temp != NULL) {
     InterCodes nextCode = get_next_code(temp);
     if (temp->code->kind == RETURN) {
-      if ((nextCode != NULL) && (nextCode->code->kind == GOTO)) {
-        nextCode->code->kind = EMPTY;
-        Operand label = nextCode->code->u.label.label;
-        int visit = 0;
-        InterCodes temp2 = interCodes;
-        while (temp2 != NULL) {
-          if(temp2->code->kind==GOTO){
-            if(compare_operand_with_operand(temp2->code->u.label.label, label)){
-              visit++;
-            }
-          }else if(temp2->code->kind==RELOP){
-            if(compare_operand_with_operand(temp2->code->u.goto_con.label, label)){
-              visit++;
-            }
-          }
-          temp2 = temp2->next;
+      InterCodes tempCode = nextCode;
+      while(tempCode!=NULL) {
+        if (tempCode->code->kind == GOTO) {
+          tempCode->code->kind = EMPTY;
+          Operand label = tempCode->code->u.label.label;
+          delete_label(interCodes, label);
+        }else if((tempCode->code->kind==FUNCTION)||(tempCode->code->kind==LABEL)){
+          break;
+        }else if(tempCode->code->kind==RELOP){
+          tempCode->code->kind = EMPTY;
+          Operand label = tempCode->code->u.goto_con.label;
+          delete_label(interCodes, label);
+        }else{
+          tempCode->code->kind = EMPTY;
         }
-        if(visit==0){
-          temp2 = interCodes;
-          while (temp2 != NULL) {
-            if(temp2->code->kind==LABEL){
-              if(compare_operand_with_operand(temp2->code->u.label.label, label)){
-                temp2->code->kind=EMPTY;
-                break;
-              }
-            }
-            temp2 = temp2->next;
-          }
-        }
+        tempCode = get_next_code(tempCode);
       }
     }
     temp = nextCode;
