@@ -56,4 +56,9 @@ void insert_symbol_intercodes(struct Hash_table* hash_table, int isAddress, char
 struct Symbol* find_symbol_intercodes(struct Hash_table* hash_table, char* name, int kind);
 char* printCodes(InterCode interCode);
 void optimize_InterCodes(InterCodes interCodes);
+int compare_operand_with_operand(Operand operand1, Operand operand2);
+char* print_operand(Operand operand, int addHashTag);
+
+
+void getVariables(InterCodes head);
 #endif

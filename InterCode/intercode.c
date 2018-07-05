@@ -226,6 +226,7 @@ void translate_root(Node* tree_root, char* path) {
     temp = temp->next;
   }
   fclose(fp);
+  getVariables(head);
   free_table(hash_table);
 }
 
