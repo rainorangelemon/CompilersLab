@@ -1,0 +1,6 @@
+FUNCTION k :
+PARAM v1
+WRITE v1
+RETURN #1
+FUNCTION main :
+ARG #2

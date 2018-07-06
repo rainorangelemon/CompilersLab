@@ -9,15 +9,21 @@
 
 void print_codes_status(int* in, int* out, int* def, int* use, struct Succ* succ, int numInterCodes, InterCodes head);
 void getVariables(VarIndexes varIndexes, InterCodes head);
-void calculateBasic(InterCodes head, VarIndexes varIndexes);
+Basic calculateBasic(InterCodes head, VarIndexes varIndexes);
 void print_binary(int bits);
+void allocateReg(InterCodes head, Basic basic, VarIndexes varIndexes);
+
+int numS = 7;
+int numT = 10;
+int numReg = 10 + 8 - 1; // save a reg s7 for spilled var
 
 void createMips(InterCodes head){
   VarIndexes varIndexes = (VarIndexes)malloc(sizeof(struct VarIndexes_));
   memset(varIndexes, 0, sizeof(struct VarIndexes_));
   getVariables(varIndexes, head);
   Basic basic = calculateBasic(head, varIndexes);
-
+  printf("allocate reg!\n");
+  allocateReg(head, basic, varIndexes);
 }
 
 int find_varIndex(VarIndexes varIndexes, Operand operand){
@@ -33,12 +39,12 @@ int find_varIndex(VarIndexes varIndexes, Operand operand){
   if((operand->kind==CONSTANT)&&(operand->u.value==0)) {
     return 0;
   }else{
-    return -1;
+    return 32;
   }
 }
 
 void addVariableIndex(VarIndexes varIndexes, Operand operand){
-  if(find_varIndex(varIndexes, operand)<0){
+  if(find_varIndex(varIndexes, operand)>=31){
     int index = 0;
     VarIndexes temp = varIndexes;
     while(temp->varIndex!=NULL){
@@ -68,6 +74,12 @@ void addVariableIndex(VarIndexes varIndexes, Operand operand){
   }
 }
 
+void addConstantIndex(VarIndexes varIndexes, Operand operand){
+  if(operand->kind==CONSTANT){
+    addVariableIndex(varIndexes, operand);
+  }
+}
+
 void getVariables(VarIndexes varIndexes, InterCodes head){
   InterCodes temp = head;
   while(temp!=NULL) {
@@ -78,24 +90,28 @@ void getVariables(VarIndexes varIndexes, InterCodes head){
       // do nothing
     } else if (interCode->kind == ASSIGN) {
       addVariableIndex(varIndexes, interCode->u.assign.left);
+      addConstantIndex(varIndexes, interCode->u.assign.right);
     } else if (interCode->kind == MATHOP) {
       addVariableIndex(varIndexes, interCode->u.binop.result);
+      addConstantIndex(varIndexes, interCode->u.binop.op1);
+      addConstantIndex(varIndexes, interCode->u.binop.op2);
     } else if (interCode->kind == RIGHT_ADDR) {
       addVariableIndex(varIndexes, interCode->u.assign.left);
     } else if (interCode->kind == RIGHT_STAR) {
       addVariableIndex(varIndexes, interCode->u.assign.left);
     } else if (interCode->kind == LEFT_STAR) {
-      // do nothing
+      addConstantIndex(varIndexes, interCode->u.assign.right);
     } else if (interCode->kind == GOTO) {
       // do nothing
     } else if (interCode->kind == RELOP) {
-      // do nothing
+      addConstantIndex(varIndexes, interCode->u.goto_con.left);
+      addConstantIndex(varIndexes, interCode->u.goto_con.right);
     } else if (interCode->kind == RETURN) {
-      // do nothing
+      addConstantIndex(varIndexes, interCode->u.label.label);
     } else if (interCode->kind == DEC) {
       // do nothing
     } else if (interCode->kind == ARG) {
-      // do nothing
+      addConstantIndex(varIndexes, interCode->u.label.label);
     } else if (interCode->kind == CALL) {
       addVariableIndex(varIndexes, interCode->u.assign.left);
     } else if (interCode->kind == PARAM) {
@@ -103,7 +119,7 @@ void getVariables(VarIndexes varIndexes, InterCodes head){
     } else if (interCode->kind == READ) {
       addVariableIndex(varIndexes, interCode->u.label.label);
     } else if (interCode->kind == WRITE) {
-      // do nothing
+      addConstantIndex(varIndexes, interCode->u.label.label);
     } else {
       // do nothing
     }
@@ -129,6 +145,12 @@ int find_label_index(InterCodes head, Operand label){
     temp = temp->next;
   }
   return -1;
+}
+
+void addDef(VarIndexes varIndexes, Operand operand, int* def){
+  if(operand->kind==CONSTANT){
+    *def  = *def | (1 << find_varIndex(varIndexes, operand));
+  }
 }
 
 Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
@@ -192,12 +214,15 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
       *tempDef = *tempDef | (1 << find_varIndex(varIndexes, interCode->u.assign.left));
       // use
       *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.assign.right));
+      addDef(varIndexes, interCode->u.assign.right, tempDef);
     } else if (interCode->kind == MATHOP) {
       // def
       *tempDef = *tempDef | (1 << find_varIndex(varIndexes, interCode->u.binop.result));
       // use
       *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.binop.op1));
       *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.binop.op2));
+      addDef(varIndexes, interCode->u.binop.op1, tempDef);
+      addDef(varIndexes, interCode->u.binop.op2, tempDef);
     } else if (interCode->kind == RIGHT_ADDR) {
       // def
       *tempDef = *tempDef | (1 << find_varIndex(varIndexes, interCode->u.assign.left));
@@ -213,6 +238,7 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
       // use
       *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.assign.left));
       *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.assign.right));
+      addDef(varIndexes, interCode->u.assign.right, tempDef);
     } else if (interCode->kind == GOTO) {
       // do nothing
     } else if (interCode->kind == RELOP) {
@@ -220,12 +246,15 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
       // use
       *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.goto_con.left));
       *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.goto_con.right));
+      addDef(varIndexes, interCode->u.goto_con.left, tempDef);
+      addDef(varIndexes, interCode->u.goto_con.right, tempDef);
     } else if (interCode->kind == RETURN) {
       *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.label.label));
+      addDef(varIndexes, interCode->u.label.label, tempDef);
     } else if (interCode->kind == DEC) {
       // do nothing
     } else if (interCode->kind == ARG) {
-      // do nothing
+      addDef(varIndexes, interCode->u.label.label, tempDef);
     } else if (interCode->kind == CALL) {
       // def
       *tempDef = *tempDef | (1 << find_varIndex(varIndexes, interCode->u.assign.left));
@@ -237,6 +266,7 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
     } else if (interCode->kind == WRITE) {
       // use
       *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.label.label));
+      addDef(varIndexes, interCode->u.label.label, tempDef);
     } else {
       // do nothing
     }
@@ -269,12 +299,14 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
     }
   }
 
+//  print_codes_status(in, out, def, use, succ, numInterCodes, head);
+
   Basic result = (Basic)malloc(sizeof(struct Basic_));
-  result.def = def;
-  result.in = in;
-  result.out = out;
-  result.succ = succ;
-  result.use = use;
+  result->def = def;
+  result->in = in;
+  result->out = out;
+  result->succ = succ;
+  result->use = use;
   return result;
 }
 
@@ -305,4 +337,249 @@ void print_binary(int bits){
     }
   }
   printf(", ");
+}
+
+int count_one(int bits){
+  int ones = 0;
+  for(int i=31; i>=1; i--) {
+    if(((bits>>i)&0x1)==1) {
+      ones += 1;
+    }
+  }
+}
+
+void color(VarIndexes varIndexes, int varIndex, char regName, int regIndex){
+  VarIndexes temp = varIndexes;
+  while(temp!=NULL){
+    if(temp->varIndex->index == varIndex){
+      if(regName == '0') {
+        temp->varIndex->isSpilled = 1;
+        temp->varIndex->reg.hasReg = 0;
+      }else {
+        temp->varIndex->isSpilled = 0;
+        temp->varIndex->reg.hasReg = 1;
+        temp->varIndex->reg.index = regIndex;
+        if (regName == 's') {
+          temp->varIndex->reg.isS = 1;
+        } else {
+          temp->varIndex->reg.isS = 0;
+        }
+      }
+      break;
+    }
+    temp = temp->next;
+  }
+}
+
+int auto_color(VarIndexes varIndexes, int varIndex, int done, int neighbours, char regName){
+  int doneNeighbour = (neighbours & done);
+  if((regName=='a')||(regName=='t')){
+    int t = 0;
+    VarIndexes temp = varIndexes;
+    while(temp!=NULL){
+      if(((1 << (temp->varIndex->index))&doneNeighbour)!=0){
+        if((temp->varIndex->reg.hasReg==1)&&(temp->varIndex->reg.isS==0)){
+          t |= (1<<(temp->varIndex->reg.index));
+        }
+      }
+      temp = temp->next;
+    }
+    int remain = ((1<<numT)-1) & (~t);
+    if(remain!=0){
+      for(int i=0; i<numT; i++){
+        if(((remain>>i)&0x1)!=0){
+          color(varIndexes, varIndex, 't', i);
+          return 0;
+        }
+      }
+    }
+  }
+  if((regName=='a')||(regName=='s')){
+    int s = 0;
+    VarIndexes temp = varIndexes;
+    while(temp!=NULL){
+      if(((1 << (temp->varIndex->index))&doneNeighbour)!=0){
+        if((temp->varIndex->reg.hasReg==1)&&(temp->varIndex->reg.isS==1)){
+          s |= (1<<(temp->varIndex->reg.index));
+        }
+      }
+      temp = temp->next;
+    }
+    int remain = ((1<<numS)-1) & (~s);
+    if(remain!=0){
+      for(int i=0; i<numS; i++){
+        if(((remain>>i)&0x1)!=0){
+          color(varIndexes, varIndex, 's', i);
+          return 0;
+        }
+      }
+    }
+  }
+  color(varIndexes, varIndex, '0', -1);
+  return 1;
+}
+
+void print_color(VarIndexes varIndexes){
+  VarIndexes temp = varIndexes;
+  while(temp!=NULL){
+    if(temp->varIndex->isSpilled==1) {
+      printf("%d: spilled\n", temp->varIndex->index);
+    }else{
+      printf("%d: isS: %d, index: %d\n", temp->varIndex->index, temp->varIndex->reg.isS, temp->varIndex->reg.index);
+    }
+    temp = temp->next;
+  }
+}
+
+void allocateReg(InterCodes head, Basic basic, VarIndexes varIndexes){
+  // 数变量个数
+  int varNum=0;
+  VarIndexes tempVarIndexes = varIndexes;
+  while(tempVarIndexes!=NULL){
+    varNum += 1;
+    tempVarIndexes = tempVarIndexes->next;
+  }
+
+  // 数中间代码个数
+  int varCodes=0;
+  InterCodes interCodes = head;
+  while(interCodes!=NULL){
+    varCodes += 1;
+    interCodes = interCodes->next;
+  }
+
+  int* out = basic->out;
+  int* in = basic->in;
+  int* def = basic->def;
+
+  // 建立干涉图
+  int* inferG = (int*)malloc(sizeof(int)*(varNum+1));
+  memset(inferG, 0, sizeof(int)*(varNum+1));
+
+  printf("varCodes: %d\n", varCodes);
+
+  interCodes = head;
+  for(int codeIndex=1; codeIndex<=varCodes; codeIndex++){
+    for(int x=1; x<=varNum; x++){
+      for(int y=1; y<=varNum; y++) {
+        if(y!=x){
+          if((((*(out+codeIndex))&(1<<x))!=0)&&(((*(out+codeIndex))&(1<<y))!=0)){
+            *(inferG + x) = (*(inferG+x)) | (1<<y);
+            *(inferG + y) = (*(inferG+y)) | (1<<x);
+          }else if((interCodes->code->kind!=ASSIGN)||(interCodes->code->u.assign.right->kind==ADDRESS)){
+            if((((*(def+codeIndex))&(1<<x))!=0)&&(((*(out+codeIndex))&(1<<y))!=0)){
+              *(inferG + x) = (*(inferG+x)) | (1<<y);
+              *(inferG + y) = (*(inferG+y)) | (1<<x);
+            }
+          }
+        }
+      }
+    }
+    interCodes = interCodes->next;
+  }
+
+  // 记录哪些变量在 CALL 语句时有效
+  interCodes = head;
+  int callLive = 0;
+  int codeIndex=0;
+  while(interCodes!=NULL){
+    codeIndex += 1;
+    if(interCodes->code->kind==CALL){
+      int inVar = *(in + codeIndex);
+      int outVar = *(out + codeIndex);
+      callLive |= (inVar & outVar);
+    }
+    interCodes = interCodes->next;
+  }
+
+
+  // 染色
+  int oldStack = -1;
+  int stack = 0;
+  while(oldStack!=stack){
+    oldStack = stack;
+    for(int x=1; x<=varNum; x++) {
+      if((((oldStack>>x)&(0x1))==0)&&(count_one((*(inferG+x))&(~oldStack))<=(numReg-1))){ // save a reg for spilled var
+        stack |= (1<<x);
+      }
+    }
+  }
+  // 检查剩下来的顶点
+  int remainVer = 0;
+  int spilt = 0;
+  for(int x=1; x<=varNum; x++){
+    if(((stack>>x)&(0x1))==0){
+      remainVer += 1;
+    }
+    if(remainVer > (numReg - 1)){
+      stack |= (1<<x);
+      spilt |= (1<<x);
+    }
+  }
+
+  // 先给小于k个节点染色，done意味着已完成染色的节点
+  int done = 0;
+  // 优先给干涉图中在call处活跃的节点染色
+  int sNum = 0;
+  for(int x=1; x<=varNum; x++){
+    if(((stack>>x)&(0x1))==0){
+      if(((callLive>>x)&(0x1))==1){
+        if(sNum<numS) {
+          color(varIndexes, x, 's', sNum);
+          sNum += 1;
+          done |= (1<<x);
+        }else{
+          stack |= (1<<x);
+          spilt |= (1<<x);
+        }
+      }
+    }
+  }
+  //给干涉图中不在call处活跃的节点染色
+  for(int x=1; x<=varNum; x++){
+    if((((stack>>x)&(0x1))==0)&&(((done>>x)&(0x1))==0)){
+      auto_color(varIndexes, x, done, (*(inferG+x)), 'a');
+      done |= (1<<x);
+    }
+  }
+
+  // 给stack中非溢出节点染色
+  for(int x=1; x<=varNum; x++){
+    if((((stack>>x)&(0x1))==1)&&(((done>>x)&(0x1))==0)&&(((spilt>>x)&(0x1))==0)){
+      int spill = 0;
+      if(((callLive>>x)&(0x1))==1){
+        spill = auto_color(varIndexes, x, done, (*(inferG + x)), 's');
+      }else{
+        spill = auto_color(varIndexes, x, done, (*(inferG + x)), 'a');
+      }
+      done |= (1<<x);
+      stack &= (~(1<<x));
+      if(spill==1){
+        spilt |= (1<<x);
+      }
+    }
+  }
+
+
+  // 给stack中剩余节点染色
+  while((stack&(~(0x1)))!=0) {
+    for (int x = 1; x <= varNum; x++) {
+      if ((((stack >> x) & (0x1)) == 1) && (((done >> x) & (0x1)) == 0)) {
+        int spill = 0;
+        if(((callLive>>x)&(0x1))==1) {
+          spill = auto_color(varIndexes, x, done, (*(inferG + x)), 's');
+        }else{
+          spill = auto_color(varIndexes, x, done, (*(inferG + x)), 'a');
+        }
+        done |= 1<<x;
+        stack &= (~(1<<x));
+        if(spill==1){
+          spilt |= 1<<x;
+        }
+      }
+    }
+  }
+
+  // 尝试输出节点
+  print_color(varIndexes);
 }

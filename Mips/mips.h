@@ -13,11 +13,19 @@ typedef struct VarIndex_* VarIndex;
 typedef struct VarIndexes_* VarIndexes;
 typedef struct Bit_* Bit;
 typedef struct Bits_* Bits;
-typedef struct Basic_ Basic;
+typedef struct Basic_* Basic;
+
+struct Reg{
+  int hasReg;
+  int isS;
+  int index;
+};
 
 struct VarIndex_{
   Operand operand;
   int index;
+  int isSpilled;
+  struct Reg reg;
 };
 
 struct VarIndexes_{
