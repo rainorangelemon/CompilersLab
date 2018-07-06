@@ -60,5 +60,6 @@ int compare_operand_with_operand(Operand operand1, Operand operand2);
 char* print_operand(Operand operand, int addHashTag);
 
 
-void getVariables(InterCodes head);
+void createMips(InterCodes head);
+char* printCodes(InterCode interCode);
 #endif

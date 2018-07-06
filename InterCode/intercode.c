@@ -222,11 +222,17 @@ void translate_root(Node* tree_root, char* path) {
   while (temp != NULL) {
     if (temp->code->kind != EMPTY) {
       fprintf(fp, "%s\n", printCodes(temp->code));
+      temp = temp->next;
+    }else{
+      temp->prev->next = temp->next;
+      temp->next->prev = temp->prev;
+      InterCodes deleteTarget = temp;
+      temp = temp->next;
+      free(deleteTarget);
     }
-    temp = temp->next;
   }
   fclose(fp);
-  getVariables(head);
+  createMips(head);
   free_table(hash_table);
 }
 
