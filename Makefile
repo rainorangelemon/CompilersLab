@@ -125,3 +125,6 @@ test3_4:
 
 test3_5:
 	./parser Test/InterCodeTest/test5 test5.ir
+
+test3_6:
+	./parser Test/InterCodeTest/test6 test6.ir

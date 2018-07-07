@@ -13,9 +13,10 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes);
 void print_binary(int bits);
 void allocateReg(InterCodes head, Basic basic, VarIndexes varIndexes);
 
-int numS = 7;
-int numT = 10;
-int numReg = 10 + 8 - 1; // save a reg s7 for spilled var
+const int numS = 6;
+const int numT = 10;
+const int numSpiltReg = 2;
+const int numReg = 10 + 8 - numSpiltReg; // save a reg s7 for spilled var
 
 void createMips(InterCodes head){
   VarIndexes varIndexes = (VarIndexes)malloc(sizeof(struct VarIndexes_));
@@ -24,6 +25,7 @@ void createMips(InterCodes head){
   Basic basic = calculateBasic(head, varIndexes);
   printf("allocate reg!\n");
   allocateReg(head, basic, varIndexes);
+//  generateObj(head, varIndexes);
 }
 
 int find_varIndex(VarIndexes varIndexes, Operand operand){
@@ -44,7 +46,7 @@ int find_varIndex(VarIndexes varIndexes, Operand operand){
 }
 
 void addVariableIndex(VarIndexes varIndexes, Operand operand){
-  if(find_varIndex(varIndexes, operand)>=31){
+  if(find_varIndex(varIndexes, operand)>31){
     int index = 0;
     VarIndexes temp = varIndexes;
     while(temp->varIndex!=NULL){
@@ -90,28 +92,41 @@ void getVariables(VarIndexes varIndexes, InterCodes head){
       // do nothing
     } else if (interCode->kind == ASSIGN) {
       addVariableIndex(varIndexes, interCode->u.assign.left);
-      addConstantIndex(varIndexes, interCode->u.assign.right);
+      if(interCode->u.assign.right->kind!=CONSTANT) {
+        addVariableIndex(varIndexes, interCode->u.assign.right);
+      }
     } else if (interCode->kind == MATHOP) {
       addVariableIndex(varIndexes, interCode->u.binop.result);
-      addConstantIndex(varIndexes, interCode->u.binop.op1);
-      addConstantIndex(varIndexes, interCode->u.binop.op2);
+      if(((*(interCode->u.binop.mathop->u.name))=='*')||
+         ((*(interCode->u.binop.mathop->u.name))=='/')||
+         (interCode->u.binop.op1->kind!=CONSTANT)) {
+        addVariableIndex(varIndexes, interCode->u.binop.op1);
+      }
+      if(((*(interCode->u.binop.mathop->u.name))=='*')||
+         ((*(interCode->u.binop.mathop->u.name))=='/')||
+         (interCode->u.binop.op2->kind!=CONSTANT)) {
+        addVariableIndex(varIndexes, interCode->u.binop.op2);
+      }
     } else if (interCode->kind == RIGHT_ADDR) {
       addVariableIndex(varIndexes, interCode->u.assign.left);
+      addVariableIndex(varIndexes, interCode->u.assign.right);
     } else if (interCode->kind == RIGHT_STAR) {
       addVariableIndex(varIndexes, interCode->u.assign.left);
+      addVariableIndex(varIndexes, interCode->u.assign.right);
     } else if (interCode->kind == LEFT_STAR) {
-      addConstantIndex(varIndexes, interCode->u.assign.right);
+      addVariableIndex(varIndexes, interCode->u.assign.left);
+      addVariableIndex(varIndexes, interCode->u.assign.right);
     } else if (interCode->kind == GOTO) {
       // do nothing
     } else if (interCode->kind == RELOP) {
-      addConstantIndex(varIndexes, interCode->u.goto_con.left);
-      addConstantIndex(varIndexes, interCode->u.goto_con.right);
+      addVariableIndex(varIndexes, interCode->u.goto_con.left);
+      addVariableIndex(varIndexes, interCode->u.goto_con.right);
     } else if (interCode->kind == RETURN) {
-      addConstantIndex(varIndexes, interCode->u.label.label);
+      addVariableIndex(varIndexes, interCode->u.label.label);
     } else if (interCode->kind == DEC) {
       // do nothing
     } else if (interCode->kind == ARG) {
-      addConstantIndex(varIndexes, interCode->u.label.label);
+      addVariableIndex(varIndexes, interCode->u.label.label);
     } else if (interCode->kind == CALL) {
       addVariableIndex(varIndexes, interCode->u.assign.left);
     } else if (interCode->kind == PARAM) {
@@ -119,7 +134,7 @@ void getVariables(VarIndexes varIndexes, InterCodes head){
     } else if (interCode->kind == READ) {
       addVariableIndex(varIndexes, interCode->u.label.label);
     } else if (interCode->kind == WRITE) {
-      addConstantIndex(varIndexes, interCode->u.label.label);
+      addVariableIndex(varIndexes, interCode->u.label.label);
     } else {
       // do nothing
     }
@@ -149,7 +164,7 @@ int find_label_index(InterCodes head, Operand label){
 
 void addDef(VarIndexes varIndexes, Operand operand, int* def){
   if(operand->kind==CONSTANT){
-    *def  = *def | (1 << find_varIndex(varIndexes, operand));
+//    *def  = *def | (1 << find_varIndex(varIndexes, operand));
   }
 }
 
@@ -213,14 +228,24 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
       // def
       *tempDef = *tempDef | (1 << find_varIndex(varIndexes, interCode->u.assign.left));
       // use
-      *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.assign.right));
-      addDef(varIndexes, interCode->u.assign.right, tempDef);
+      if(interCode->u.assign.right->kind!=CONSTANT) {
+        *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.assign.right));
+        addDef(varIndexes, interCode->u.assign.right, tempDef);
+      }
     } else if (interCode->kind == MATHOP) {
       // def
       *tempDef = *tempDef | (1 << find_varIndex(varIndexes, interCode->u.binop.result));
       // use
-      *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.binop.op1));
-      *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.binop.op2));
+      if(((*(interCode->u.binop.mathop->u.name))=='*')||
+         ((*(interCode->u.binop.mathop->u.name))=='/')||
+         (interCode->u.binop.op1->kind!=CONSTANT)) {
+        *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.binop.op1));
+      }
+      if(((*(interCode->u.binop.mathop->u.name))=='*')||
+         ((*(interCode->u.binop.mathop->u.name))=='/')||
+         (interCode->u.binop.op2->kind!=CONSTANT)) {
+        *tempUse = *tempUse | (1 << find_varIndex(varIndexes, interCode->u.binop.op2));
+      }
       addDef(varIndexes, interCode->u.binop.op1, tempDef);
       addDef(varIndexes, interCode->u.binop.op2, tempDef);
     } else if (interCode->kind == RIGHT_ADDR) {
@@ -259,7 +284,7 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
       // def
       *tempDef = *tempDef | (1 << find_varIndex(varIndexes, interCode->u.assign.left));
     } else if (interCode->kind == PARAM) {
-      // do nothing
+      *tempDef = *tempDef | (1 << find_varIndex(varIndexes, interCode->u.label.label));
     } else if (interCode->kind == READ) {
       // def
       *tempDef = *tempDef | (1 << find_varIndex(varIndexes, interCode->u.label.label));
@@ -346,6 +371,7 @@ int count_one(int bits){
       ones += 1;
     }
   }
+  return ones;
 }
 
 void color(VarIndexes varIndexes, int varIndex, char regName, int regIndex){
@@ -484,7 +510,7 @@ void allocateReg(InterCodes head, Basic basic, VarIndexes varIndexes){
   int codeIndex=0;
   while(interCodes!=NULL){
     codeIndex += 1;
-    if(interCodes->code->kind==CALL){
+    if((interCodes->code->kind==CALL)||(interCodes->code->kind==READ)||(interCodes->code->kind==WRITE)){
       int inVar = *(in + codeIndex);
       int outVar = *(out + codeIndex);
       callLive |= (inVar & outVar);
@@ -582,4 +608,318 @@ void allocateReg(InterCodes head, Basic basic, VarIndexes varIndexes){
 
   // 尝试输出节点
   print_color(varIndexes);
+}
+
+void printObj(char* obj){
+  printf("%s\n", obj);
+}
+
+int offsetFp(Operand operand, VarIndexes varIndexes){
+  VarIndexes temp = varIndexes;
+  while(temp!=NULL){
+    if(compare_operand_with_operand(operand, temp->varIndex->operand)==1){
+      return temp->varIndex->address.off2Fp;
+    }
+    temp = temp->next;
+  }
+  return 0;
+}
+
+int saveParamAddr(RegStatus regStatus, Operand operand, VarIndexes varIndexes, int fpIndex, int size, int offset){
+  // TODO: finish this
+}
+
+void freeSplitReg(RegStatus regStatus){
+  for(int i=0; i<numSpiltReg;i++) {
+    (regStatus + numReg + i)->variables = 0;
+  }
+}
+
+void saveSpiltVar(int* fpSize, RegStatus regStatus, Operand operand, VarIndexes varIndexes, int fpIndex){
+
+}
+
+char* getReg(RegStatus regStatus, Operand operand, VarIndexes varIndexes){
+
+}
+
+int count_s_regs(VarIndexes varIndexes){
+
+}
+
+void generateObj(InterCodes head, VarIndexes varIndexes){
+  RegStatus regStatus = (RegStatus)malloc(sizeof(struct RegStatus_)*(numReg+numSpiltReg));
+  memset(regStatus, 0, sizeof(struct RegStatus_)*(numReg+numSpiltReg));
+  for(int i=0; i<numReg+numSpiltReg; i++){
+    RegStatus currentReg = regStatus+i;
+    if(i<numT){
+      currentReg->isS = 0;
+      currentReg->index = i;
+    }else{
+      currentReg->isS = 1;
+      currentReg->index = i-numT;
+    }
+  }
+
+  int fpIndex = 0;
+  int paramIndex = 0;
+  int* fpSize = malloc(sizeof(int));
+  memset(fpSize, 0, sizeof(int));
+
+  InterCodes tempCodes = head;
+  while(tempCodes!=NULL){
+    InterCode interCode = tempCodes->code;
+    char* code=(char*)malloc(50*sizeof(char));
+    memset(code, 0, 50*sizeof(char));
+    if (interCode->kind == LABEL) {
+
+      sprintf(code, "%s:", print_operand(interCode->u.label.label, 0));
+
+    } else if ((interCode->kind == ASSIGN)&&(interCode->u.assign.right->kind!=ADDRESS)) {
+
+      if(interCode->u.assign.right->kind!=CONSTANT) {
+        char *regY = getReg(regStatus, interCode->u.assign.right, varIndexes);
+        char *regX = getReg(regStatus, interCode->u.assign.left, varIndexes);
+        sprintf(code, "move %s, %s", regX, regY);
+      }else{
+        char *regX = getReg(regStatus, interCode->u.assign.left, varIndexes);
+        sprintf(code, "li %s, %d", regX, interCode->u.assign.right->u.value);
+      }
+      // save the spilt reg of result
+      saveSpiltVar(fpSize, regStatus, interCode->u.assign.left, varIndexes, fpIndex);
+      freeSplitReg(regStatus);
+
+    } else if (interCode->kind == MATHOP) {
+
+      if((*(interCode->u.binop.mathop->u.name))=='+'){
+        if(interCode->u.binop.op1->kind==CONSTANT){
+          // 加法表达式中不可能同时出现两个常量（不然会被优化掉）
+          char *regY = getReg(regStatus, interCode->u.binop.op2, varIndexes);
+          char *regX = getReg(regStatus, interCode->u.binop.result, varIndexes);
+          sprintf(code, "addi %s, %s, %d", regX, regY, interCode->u.binop.op1->u.value);
+        }else if(interCode->u.binop.op2->kind==CONSTANT){
+          // 加法表达式中不可能同时出现两个常量（不然会被优化掉）
+          char *regY = getReg(regStatus, interCode->u.binop.op1, varIndexes);
+          char *regX = getReg(regStatus, interCode->u.binop.result, varIndexes);
+          sprintf(code, "addi %s, %s, %d", regX, regY, interCode->u.binop.op2->u.value);
+        }else{
+          char *regZ = getReg(regStatus, interCode->u.binop.op2, varIndexes);
+          char *regY = getReg(regStatus, interCode->u.binop.op1, varIndexes);
+          char *regX = getReg(regStatus, interCode->u.binop.result, varIndexes);
+          sprintf(code, "add %s, %s, %s", regX, regY, regZ);
+        }
+      }else if((*(interCode->u.binop.mathop->u.name))=='-'){
+        if(interCode->u.binop.op1->kind==CONSTANT){
+          // 减法表达式中不可能同时出现两个常量（不然会被优化掉）
+          char *regY = getReg(regStatus, interCode->u.binop.op2, varIndexes);
+          char *regX = getReg(regStatus, interCode->u.binop.result, varIndexes);
+          sprintf(code, "addi %s, %s, %d", regX, regY, -(interCode->u.binop.op1->u.value));
+        }else if(interCode->u.binop.op2->kind==CONSTANT){
+          // 减法表达式中不可能同时出现两个常量（不然会被优化掉）
+          char *regY = getReg(regStatus, interCode->u.binop.op1, varIndexes);
+          char *regX = getReg(regStatus, interCode->u.binop.result, varIndexes);
+          sprintf(code, "addi %s, %s, %d", regX, regY, -(interCode->u.binop.op2->u.value));
+        }else{
+          char *regZ = getReg(regStatus, interCode->u.binop.op2, varIndexes);
+          char *regY = getReg(regStatus, interCode->u.binop.op1, varIndexes);
+          char *regX = getReg(regStatus, interCode->u.binop.result, varIndexes);
+          sprintf(code, "sub %s, %s, %s", regX, regY, regZ);
+        }
+      }else if((*(interCode->u.binop.mathop->u.name))=='*'){
+        char *regZ = getReg(regStatus, interCode->u.binop.op2, varIndexes);
+        char *regY = getReg(regStatus, interCode->u.binop.op1, varIndexes);
+        char *regX = getReg(regStatus, interCode->u.binop.result, varIndexes);
+        sprintf(code, "mul %s, %s, %s", regX, regY, regZ);
+      }else if((*(interCode->u.binop.mathop->u.name))=='/'){
+        char *regZ = getReg(regStatus, interCode->u.binop.op2, varIndexes);
+        char *regY = getReg(regStatus, interCode->u.binop.op1, varIndexes);
+        char *regX = getReg(regStatus, interCode->u.binop.result, varIndexes);
+        sprintf(code, "div %s, %s\nmflo %s", regY, regZ, regX);
+      }
+      // save the spilt reg of result
+      saveSpiltVar(fpSize, regStatus, interCode->u.binop.result, varIndexes, fpIndex);
+      freeSplitReg(regStatus);
+
+    } else if (((interCode->kind == ASSIGN)&&(interCode->u.assign.right->kind == ADDRESS))||(interCode->kind == RIGHT_ADDR)) {
+
+      int offset = offsetFp(interCode->u.assign.right, varIndexes);
+      char *regX = getReg(regStatus, interCode->u.assign.left, varIndexes);
+      sprintf(code, "addi %s, $fp, %d", regX, offset);
+      // save the spilt reg of result
+      saveSpiltVar(fpSize, regStatus, interCode->u.assign.left, varIndexes, fpIndex);
+      freeSplitReg(regStatus);
+
+    } else if (interCode->kind == RIGHT_STAR) {
+
+      char *regY = getReg(regStatus, interCode->u.assign.right, varIndexes);
+      char *regX = getReg(regStatus, interCode->u.assign.left, varIndexes);
+      sprintf(code, "lw %s, 0(%s)", regX, regY);
+      // save the spilt reg of result
+      saveSpiltVar(fpSize, regStatus, interCode->u.assign.left, varIndexes, fpIndex);
+      freeSplitReg(regStatus);
+
+    } else if (interCode->kind == LEFT_STAR) {
+
+      char *regY = getReg(regStatus, interCode->u.assign.right, varIndexes);
+      char *regX = getReg(regStatus, interCode->u.assign.left, varIndexes);
+      sprintf(code, "sw %s, 0(%s)", regY, regX);
+      freeSplitReg(regStatus);
+
+    } else if (interCode->kind == GOTO) {
+
+      sprintf(code, "j %s", print_operand(interCode->u.label.label, 1));
+
+    } else if (interCode->kind == RELOP) {
+
+      char relop1[] = ">",
+        relop2[] = "<=",
+        relop3[] = "==",
+        relop4[] = "!=",
+        relop5[] = "<",
+        relop6[] = ">=";
+      char* origin = interCode->u.goto_con.relop->u.name;
+      char *regX = getReg(regStatus, interCode->u.goto_con.left, varIndexes);
+      char *regY = getReg(regStatus, interCode->u.goto_con.right, varIndexes);
+      char* Z = interCode->u.goto_con.label->u.name;
+      if (strcmp(origin, relop1)==0) {
+        sprintf(code, "bgt %s, %s, %s", regX, regY, Z);
+      }else if (strcmp(origin, relop2)==0){
+        sprintf(code, "ble %s, %s, %s", regX, regY, Z);
+      }else if (strcmp(origin, relop3)==0){
+        sprintf(code, "beq %s, %s, %s", regX, regY, Z);
+      }else if (strcmp(origin, relop4)==0){
+        sprintf(code, "bne %s, %s, %s", regX, regY, Z);
+      }else if (strcmp(origin, relop5)==0){
+        sprintf(code, "blt %s, %s, %s", regX, regY, Z);
+      }else if (strcmp(origin, relop6)==0){
+        sprintf(code, "bge %s, %s, %s", regX, regY, Z);
+      }
+      freeSplitReg(regStatus);
+
+    } else if (interCode->kind == ARG) {
+
+      int argNum = 0;
+      InterCodes currentCodes = tempCodes;
+      while((currentCodes!=NULL)&&(currentCodes->code->kind==ARG)){
+        argNum += 1;
+        currentCodes = currentCodes->next;
+      }
+      int spSize = (0>(4*(argNum-5)))?0:(4*(argNum-5));
+      if(spSize!=0) {
+        sprintf(code, "subu $sp, $sp, %d", spSize);
+      }
+      printObj(code);
+      memset(code, 0, 50*sizeof(char));
+      currentCodes = tempCodes;
+      for(int currentArg = argNum; currentArg >=1; currentArg--){
+        char *arg = getReg(regStatus, currentCodes->code->u.label.label, varIndexes);
+        if(currentArg>=5){
+          int offset = 4*(currentArg-5);
+          sprintf(code, "sw %s, %d($sp)", arg, offset);
+          printObj(code);
+          memset(code, 0, 50*sizeof(char));
+        }else{
+          sprintf(code, "move $a%d, %s", currentArg-1, arg);
+          printObj(code);
+          memset(code, 0, 50*sizeof(char));
+        }
+        freeSplitReg(regStatus);
+        currentCodes = currentCodes->next;
+      }
+
+      if(currentCodes->code->kind==CALL) {
+        char* result = getReg(regStatus, currentCodes->code->u.assign.left, varIndexes);
+        if(spSize!=0) {
+          sprintf(code, "jal %s\nmove %s, $v0\naddi $sp, $sp, %d", currentCodes->code->u.assign.right, result, spSize);
+        }else{
+          sprintf(code, "jal %s\nmove %s, $v0", currentCodes->code->u.assign.right, result);
+        }
+        saveSpiltVar(fpSize, regStatus, currentCodes->code->u.assign.left, varIndexes, fpIndex);
+        freeSplitReg(regStatus);
+      }else{
+        printf("wrong!!!!!!!!!!!\n");
+      }
+
+      tempCodes = currentCodes;
+
+    } else if (interCode->kind == CALL) {
+
+      char* result = getReg(regStatus, interCode->u.assign.left, varIndexes);
+      sprintf(code, "jal %s\nmove %s, $v0", interCode->u.assign.right, result);
+      saveSpiltVar(fpSize, regStatus, interCode->u.assign.left, varIndexes, fpIndex);
+      freeSplitReg(regStatus);
+
+    } else if (interCode->kind == FUNCTION) {
+
+      fpIndex += 1;
+      *fpSize = 0;
+      paramIndex = 0;
+      sprintf(code, "%s:", print_operand(interCode->u.label.label, 1));
+      printObj(code);
+      memset(code, 0, 50*sizeof(char));
+
+      int paramNum = 0;
+      InterCodes currentCodes = tempCodes->next;
+      while(tempCodes->code->kind==PARAM){
+        paramNum += 1;
+        tempCodes = tempCodes->next;
+      }
+
+      int numLiveS=0;
+      int s_regs = count_s_regs(varIndexes);
+      for(int i=0;i<numS;i++){
+        if(((s_regs>>i)&0x1)==1){
+          numLiveS += 1;
+        }
+      }
+
+      int spOff = 4*(numLiveS)+8;
+      sprintf(code, "subu $sp, $sp, %d", spOff);
+      printObj(code);
+      memset(code, 0, 50*sizeof(char));
+      sprintf(code, "sw $ra, %d($sp)\nsw $fp, %d($sp)", spOff-4, spOff-8);
+      printObj(code);
+      memset(code, 0, 50*sizeof(char));
+      sprintf(code, "addi $fp, $sp, %d", spOff);
+      printObj(code);
+      memset(code, 0, 50*sizeof(char));
+
+      int offReg = 8;
+      for(int i=0;i<numS;i++){
+        if(((s_regs>>i)&0x1)==1){
+          offReg += 4;
+          sprintf(code, "sw $s%d, %d($sp)", i, spOff-offReg);
+          printObj(code);
+          memset(code, 0, 50*sizeof(char));
+        }
+      }
+
+
+
+    } else if (interCode->kind == PARAM) {
+
+      paramIndex += 1;
+      if(find_varIndex(varIndexes, interCode->u.label.label)>31){
+        // do nothing
+      }else{
+        char* reg = getReg(regStatus, interCode->u.label.label, varIndexes);
+        if(paramIndex>=0){
+
+        }
+      }
+
+    } else if (interCode->kind == RETURN) {
+      // do nothing
+    } else if (interCode->kind == DEC) {
+      // do nothing
+    } else if (interCode->kind == READ) {
+      // do nothing
+    } else if (interCode->kind == WRITE) {
+      // do nothing
+    } else {
+      // do nothing
+    }
+    printObj(code);
+    tempCodes = tempCodes->next;
+  }
 }

@@ -4,3 +4,4 @@ WRITE v1
 RETURN #1
 FUNCTION main :
 ARG #2
+t4 := CALL k

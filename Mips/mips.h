@@ -14,6 +14,7 @@ typedef struct VarIndexes_* VarIndexes;
 typedef struct Bit_* Bit;
 typedef struct Bits_* Bits;
 typedef struct Basic_* Basic;
+typedef struct RegStatus_* RegStatus;
 
 struct Reg{
   int hasReg;
@@ -21,11 +22,20 @@ struct Reg{
   int index;
 };
 
+struct VarAddr{
+  int hasAddr;
+  int fpIndex;
+  int off2Fp;
+  int size;
+  int newest;
+};
+
 struct VarIndex_{
   Operand operand;
   int index;
   int isSpilled;
   struct Reg reg;
+  struct VarAddr address;
 };
 
 struct VarIndexes_{
@@ -44,6 +54,12 @@ struct Basic_{
   int* def;
   int* use;
   struct Succ* succ;
+};
+
+struct RegStatus_{
+  int isS;
+  int index;
+  int variables;
 };
 
 #endif //COMPILERSLAB_MIPS_H

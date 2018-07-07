@@ -679,6 +679,10 @@ Type translate_Exp(struct Node* Exp, InterCodes head, char* place) {
         addCode(head, create_code_assign(CALL,
                                          create_operand(VARIABLE, 0, place),
                                          create_operand(VARIABLE, 0, Exp->son->value)));
+      }else{
+        addCode(head, create_code_assign(CALL,
+                                         create_operand(VARIABLE, 0, new_temp()),
+                                         create_operand(VARIABLE, 0, Exp->son->value)));
       }
     }
     result = (Type) malloc(sizeof(struct Type_));
