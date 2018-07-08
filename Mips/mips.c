@@ -18,8 +18,16 @@ const int numS = 6;
 const int numT = 10;
 const int numSpiltReg = 2;
 const int numReg = 10 + 8 - numSpiltReg; // save a reg s7 for spilled var
+FILE * fp=NULL;
+
+extern char* sFile;
 
 void createMips(InterCodes head){
+
+  if(sFile!=NULL) {
+    fp = fopen(sFile, "w+");
+  }
+
   VarIndexes varIndexes = (VarIndexes)malloc(sizeof(struct VarIndexes_));
   memset(varIndexes, 0, sizeof(struct VarIndexes_));
   getVariables(varIndexes, head);
@@ -27,6 +35,11 @@ void createMips(InterCodes head){
   printf("allocate reg!\n");
   allocateReg(head, basic, varIndexes);
   generateObj(head, varIndexes);
+
+  if(sFile!=NULL) {
+    fclose(fp);
+  }
+
 }
 
 VarIndexes find_varIndexes(VarIndexes varIndexes, Operand operand){
@@ -625,7 +638,9 @@ void allocateReg(InterCodes head, Basic basic, VarIndexes varIndexes){
 }
 
 void printObj(char* obj){
-  printf("%s\n", obj);
+  if(sFile!=NULL){
+    fprintf(fp, "%s\n", obj);
+  }
 }
 
 int offsetFp(Operand operand, VarIndexes varIndexes, int isDec){
@@ -804,11 +819,83 @@ int count_s_regs(VarIndexes varIndexes){
 void print_begin_code(VarIndexes varIndexes){
   char* code=(char*)malloc(50*sizeof(char));
   memset(code, 0, 50*sizeof(char));
-  sprintf(code, ".data\n_prompt: .asciiz \"Enter an integer:\"");
+  sprintf(code, ".data");
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "_prompt: .asciiz \"Can I have an integer?:\"");
   printObj(code);
   memset(code, 0, 50*sizeof(char));
   sprintf(code, "_ret: .asciiz \"\\n\"\n.globl main\n.text");
   printObj(code);
+  memset(code, 0, 50*sizeof(char));
+
+  // read
+  sprintf(code, "\nread:");
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+
+  sprintf(code, "subu $sp, $sp, %d", 8);
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "sw $ra, %d($sp)\nsw $fp, %d($sp)", 4, 0);
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "addi $fp, $sp, %d", 8);
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+
+  sprintf(code, "li $v0, 4\nla $a0, _prompt\nsyscall"); // 提醒用户输入
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "syscall\nli $v0, 5\nsyscall"); // 读入
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+
+  // 开始恢复寄存器
+  sprintf(code, "move $sp, $fp");
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "lw $ra, %d($sp)\nlw $fp, %d($sp)", -4, -8);
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "jr $ra"); // 结果已在v0中，无需改变存放的寄存器
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+
+  // write
+  sprintf(code, "\nwrite:");
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+
+  sprintf(code, "subu $sp, $sp, %d", 8);
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "sw $ra, %d($sp)\nsw $fp, %d($sp)", 4, 0);
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "addi $fp, $sp, %d", 8);
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+
+
+  sprintf(code, "li $v0, 1\nsyscall\nli $v0, 4"); // 输出
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "la $a0, _ret\nsyscall\nmove $v0, $0"); // 换个行
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+
+  // 开始恢复寄存器
+  sprintf(code, "move $sp, $fp");
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "lw $ra, %d($sp)\nlw $fp, %d($sp)", -4, -8);
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+  sprintf(code, "jr $ra"); // 结果已在v0中，无需改变存放的寄存器
+  printObj(code);
+  memset(code, 0, 50*sizeof(char));
+
 }
 
 void generateObj(InterCodes head, VarIndexes varIndexes){
@@ -1097,13 +1184,13 @@ void generateObj(InterCodes head, VarIndexes varIndexes){
       }
 
       // TODO: still have doubt here: is having lw $fp, -8($fp) good ?
+      sprintf(code, "move $sp, $fp");
+      printObj(code);
+      memset(code, 0, 50*sizeof(char));
       sprintf(code, "lw $ra, -4($fp)");
       printObj(code);
       memset(code, 0, 50*sizeof(char));
       sprintf(code, "lw $fp, -8($fp)");
-      printObj(code);
-      memset(code, 0, 50*sizeof(char));
-      sprintf(code, "addi $sp, $sp, %d", *fpSize);
       printObj(code);
       memset(code, 0, 50*sizeof(char));
 

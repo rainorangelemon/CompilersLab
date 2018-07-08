@@ -11,6 +11,8 @@ int tempVariableNumber = 0;
 int variableNumber = 0;
 int lableNumber = 0;
 extern struct Hash_table* hash_table;
+extern char* irFile;
+extern char* sFile;
 
 void addCode(InterCodes codes, InterCode newCode);
 char* new_temp();
@@ -203,6 +205,18 @@ int isAddress(char* name){
 }
 
 void translate_root(Node* tree_root, char* path) {
+  char* fileEnd = path;
+  while((*(fileEnd+1))!='\0'){
+    fileEnd = fileEnd + 1;
+  }
+  if((*fileEnd)=='s'){
+    sFile = path;
+    irFile = NULL;
+  }else{
+    irFile = path;
+    sFile = NULL;
+  }
+
   char rule1[] = "Program";
   if (strcmp(tree_root->name, rule1) != 0) {
     return;
@@ -214,14 +228,15 @@ void translate_root(Node* tree_root, char* path) {
   optimize_InterCodes(head);
   // write into file
   FILE * fp;
-  char *current_path = malloc(60*sizeof(char));
-  memset(current_path, 0, 60*sizeof(char));
-  sprintf(current_path, "../%s", path);
-  fp = fopen(path,"w+");
+  if(irFile!=NULL) {
+    fp = fopen(path, "w+");
+  }
   InterCodes temp = head;
   while (temp != NULL) {
     if (temp->code->kind != EMPTY) {
-      fprintf(fp, "%s\n", printCodes(temp->code));
+      if(irFile!=NULL) {
+        fprintf(fp, "%s\n", printCodes(temp->code));
+      }
       temp = temp->next;
     }else{
       temp->prev->next = temp->next;
@@ -231,7 +246,9 @@ void translate_root(Node* tree_root, char* path) {
       free(deleteTarget);
     }
   }
-  fclose(fp);
+  if(irFile!=NULL) {
+    fclose(fp);
+  }
   createMips(head);
   free_table(hash_table);
 }

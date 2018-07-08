@@ -1,0 +1,9 @@
+int k(int m){
+  write(m);
+  return 1;
+}
+
+int main()
+{
+  k(2);
+}

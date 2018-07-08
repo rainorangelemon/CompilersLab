@@ -128,3 +128,21 @@ test3_5:
 
 test3_6:
 	./parser Test/InterCodeTest/test6 test6.ir
+
+test4_1:
+	./parser Test/MipsTest/test1 test1.s
+
+test4_2:
+	./parser Test/MipsTest/test2 test2.s
+
+test4_3:
+	./parser Test/MipsTest/test3 test3.s
+
+test4_4:
+	./parser Test/MipsTest/test4 test4.s
+
+test4_5:
+	./parser Test/MipsTest/test5 test5.s
+
+test4_6:
+	./parser Test/MipsTest/test6 test6.s

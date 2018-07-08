@@ -13,6 +13,9 @@ typedef struct InterCode_* InterCode;
 typedef struct InterCodes_* InterCodes;
 typedef struct Arg_list_* Arg_list;
 
+char* irFile;
+char* sFile;
+
 struct InterCodes_{
   InterCode code;
   InterCodes prev;
