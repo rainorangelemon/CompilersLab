@@ -35,7 +35,7 @@ struct VarIndex_{
   int index;
   int isSpilled;
   struct Reg reg;
-  struct VarAddr address;
+  struct VarAddr decAddr, spiltAddr;
 };
 
 struct VarIndexes_{
