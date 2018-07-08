@@ -32,7 +32,6 @@ void createMips(InterCodes head){
   memset(varIndexes, 0, sizeof(struct VarIndexes_));
   getVariables(varIndexes, head);
   Basic basic = calculateBasic(head, varIndexes);
-  printf("allocate reg!\n");
   allocateReg(head, basic, varIndexes);
   generateObj(head, varIndexes);
 
@@ -167,11 +166,13 @@ void getVariables(VarIndexes varIndexes, InterCodes head){
     }
     temp = temp->next;
   }
-  VarIndexes varIndexes1 = varIndexes;
-  while(varIndexes1!=NULL){
-    printf("%d: %s\n", varIndexes1->varIndex->index, print_operand(varIndexes1->varIndex->operand, 1));
-    varIndexes1 = varIndexes1->next;
-  }
+
+//  for debug
+//  VarIndexes varIndexes1 = varIndexes;
+//  while(varIndexes1!=NULL){
+//    printf("%d: %s\n", varIndexes1->varIndex->index, print_operand(varIndexes1->varIndex->operand, 1));
+//    varIndexes1 = varIndexes1->next;
+//  }
 }
 
 int find_label_index(InterCodes head, Operand label){
@@ -203,7 +204,7 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
     temp = temp->next;
   }
 
-  printf("control flow!\n");
+  // control flow
 
   int* in = (int*)malloc(sizeof(int)*numInterCodes);
   int* out = (int*)malloc(sizeof(int)*numInterCodes);
@@ -218,8 +219,6 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
 
   int codeIndex = 0;
   temp = head;
-
-  printf("succ, def and use!\n");
 
   // define succ, def, use
   while(temp!=NULL){
@@ -327,7 +326,6 @@ Basic calculateBasic(InterCodes head, VarIndexes varIndexes){
     temp = temp->next;
   }
 
-  printf("in and out!\n");
 
   // define in and out
   int different = 1;
@@ -509,7 +507,6 @@ void allocateReg(InterCodes head, Basic basic, VarIndexes varIndexes){
   int* inferG = (int*)malloc(sizeof(int)*(varNum+1));
   memset(inferG, 0, sizeof(int)*(varNum+1));
 
-  printf("varCodes: %d\n", varCodes);
 
   interCodes = head;
   for(int codeIndex=1; codeIndex<=varCodes; codeIndex++){
@@ -633,8 +630,8 @@ void allocateReg(InterCodes head, Basic basic, VarIndexes varIndexes){
     }
   }
 
-  // 尝试输出节点
-  print_color(varIndexes);
+  // 尝试输出节点 for debug only
+//  print_color(varIndexes);
 }
 
 void printObj(char* obj){
@@ -679,6 +676,12 @@ void saveParamAddr(RegStatus regStatus, Operand operand, VarIndexes varIndexes, 
     temp->varIndex->decAddr.size = 4;
     temp->varIndex->decAddr.fpIndex = fpIndex;
     temp->varIndex->decAddr.newest = 1;
+  }
+}
+
+void freeAllReg(RegStatus regStatus){
+  for(int i=0; i<numReg+numSpiltReg;i++){
+    (regStatus + i)->variables = 0;
   }
 }
 
@@ -822,7 +825,7 @@ void print_begin_code(VarIndexes varIndexes){
   sprintf(code, ".data");
   printObj(code);
   memset(code, 0, 50*sizeof(char));
-  sprintf(code, "_prompt: .asciiz \"Can I have an integer?:\"");
+  sprintf(code, "_prompt: .asciiz \"Can I have an integer: \"");
   printObj(code);
   memset(code, 0, 50*sizeof(char));
   sprintf(code, "_ret: .asciiz \"\\n\"\n.globl main\n.text");
@@ -847,7 +850,7 @@ void print_begin_code(VarIndexes varIndexes){
   sprintf(code, "li $v0, 4\nla $a0, _prompt\nsyscall"); // 提醒用户输入
   printObj(code);
   memset(code, 0, 50*sizeof(char));
-  sprintf(code, "syscall\nli $v0, 5\nsyscall"); // 读入
+  sprintf(code, "li $v0, 5\nsyscall"); // 读入
   printObj(code);
   memset(code, 0, 50*sizeof(char));
 
@@ -898,6 +901,14 @@ void print_begin_code(VarIndexes varIndexes){
 
 }
 
+char* bigLetter(char* name){
+  char mainFunc[] = "main";
+  if((((*name)>='a')&&((*name)<='z'))&&(strcmp(name, mainFunc)!=0)){
+    *name = *name - ('a' -'A');
+  }
+  return name;
+}
+
 void generateObj(InterCodes head, VarIndexes varIndexes){
   RegStatus regStatus = (RegStatus)malloc(sizeof(struct RegStatus_)*(numReg+numSpiltReg));
   memset(regStatus, 0, sizeof(struct RegStatus_)*(numReg+numSpiltReg));
@@ -926,7 +937,7 @@ void generateObj(InterCodes head, VarIndexes varIndexes){
     memset(code, 0, 50*sizeof(char));
     if (interCode->kind == LABEL) {
 
-      sprintf(code, "%s:", print_operand(interCode->u.label.label, 0));
+      sprintf(code, "%s:", bigLetter(interCode->u.label.label->u.name));
 
     } else if ((interCode->kind == ASSIGN)&&(interCode->u.assign.right->kind!=ADDRESS)) {
 
@@ -1022,7 +1033,7 @@ void generateObj(InterCodes head, VarIndexes varIndexes){
 
     } else if (interCode->kind == GOTO) {
 
-      sprintf(code, "j %s", print_operand(interCode->u.label.label, 1));
+      sprintf(code, "j %s", bigLetter(interCode->u.label.label->u.name));
 
     } else if (interCode->kind == RELOP) {
 
@@ -1035,7 +1046,7 @@ void generateObj(InterCodes head, VarIndexes varIndexes){
       char* origin = interCode->u.goto_con.relop->u.name;
       char *regX = getReg(regStatus, interCode->u.goto_con.left, varIndexes);
       char *regY = getReg(regStatus, interCode->u.goto_con.right, varIndexes);
-      char* Z = interCode->u.goto_con.label->u.name;
+      char* Z = bigLetter(interCode->u.goto_con.label->u.name);
       if (strcmp(origin, relop1)==0) {
         sprintf(code, "bgt %s, %s, %s", regX, regY, Z);
       }else if (strcmp(origin, relop2)==0){
@@ -1085,9 +1096,9 @@ void generateObj(InterCodes head, VarIndexes varIndexes){
       if(currentCodes->code->kind==CALL) {
         char* result = getReg(regStatus, currentCodes->code->u.assign.left, varIndexes);
         if(spSize!=0) {
-          sprintf(code, "jal %s\nmove %s, $v0\naddi $sp, $sp, %d", currentCodes->code->u.assign.right->u.name, result, spSize);
+          sprintf(code, "jal %s\nmove %s, $v0\naddi $sp, $sp, %d", bigLetter(currentCodes->code->u.assign.right->u.name), result, spSize);
         }else{
-          sprintf(code, "jal %s\nmove %s, $v0", currentCodes->code->u.assign.right->u.name, result);
+          sprintf(code, "jal %s\nmove %s, $v0", bigLetter(currentCodes->code->u.assign.right->u.name), result);
         }
         saveSpiltVar(fpSize, regStatus, currentCodes->code->u.assign.left, result, varIndexes, fpIndex);
         freeSplitReg(regStatus, NULL);
@@ -1109,7 +1120,7 @@ void generateObj(InterCodes head, VarIndexes varIndexes){
       fpIndex += 1;
       *fpSize = 0;
       paramIndex = 0;
-      sprintf(code, "\n%s:", print_operand(interCode->u.label.label, 1));
+      sprintf(code, "\n%s:", bigLetter(interCode->u.label.label->u.name));
       printObj(code);
       memset(code, 0, 50*sizeof(char));
 
@@ -1150,6 +1161,7 @@ void generateObj(InterCodes head, VarIndexes varIndexes){
       }
 
       *fpSize = *fpSize + spOff;
+      freeAllReg(regStatus);
 
 
     } else if (interCode->kind == PARAM) {
@@ -1161,7 +1173,7 @@ void generateObj(InterCodes head, VarIndexes varIndexes){
         char* param = getReg(regStatus, interCode->u.label.label, varIndexes);
         if(paramIndex>=5){
           int offset = 4*(paramIndex-5);
-          sprintf(code, "addi %s, $fp, %d", param, offset);
+          sprintf(code, "lw %s, %d($fp)", param, offset);
           saveParamAddr(regStatus, interCode->u.label.label, varIndexes, fpIndex, offset);
         }else{
           sprintf(code, "move %s, $a%d", param, paramIndex-1);
